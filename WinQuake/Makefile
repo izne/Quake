@@ -83,7 +83,7 @@ CSOURCES = &
 	sv_move.c &
 	sv_phys.c &
 	sv_user.c &
-	sys_dos.c &
+	sys_dos_wc.c &
 	vid_dos.c &
 	vid_vga.c &
 	view.c &
@@ -151,7 +151,7 @@ COBJS = &
 	$(BUILDDIR)\sv_move.obj &
 	$(BUILDDIR)\sv_phys.obj &
 	$(BUILDDIR)\sv_user.obj &
-	$(BUILDDIR)\sys_dos.obj &
+	$(BUILDDIR)\sys_dos_wc.obj &
 	$(BUILDDIR)\vid_dos.obj &
 	$(BUILDDIR)\vid_vga.obj &
 	$(BUILDDIR)\view.obj &
@@ -248,11 +248,5 @@ help: .SYMBOLIC
 # 3. Set WATCOM=C:\WATCOM
 # 4. Run: wmake release
 # 5. Copy quake486.exe and DOS4GW.EXE to your Quake directory
-# 6. Test on 486: quake486.exe
-#
-# EXPECTED PERFORMANCE on Am5x86-X5-160:
-# - timedemo1: 14.4 FPS → 19-23 FPS
-# - Smooth gameplay at 320x200
-# - Competitive with Pentium 75 performance
 #
 #==============================================================================
