@@ -124,7 +124,9 @@ float V_CalcBob (void)
 // bob is proportional to velocity in the xy plane
 // (don't count Z, or jumping messes it up)
 
-	bob = sqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1]) * cl_bob.value;
+	//bob = sqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1]) * cl_bob.value;
+	bob = (1.0f / Q_rsqrt(cl.velocity[0] * cl.velocity[0] + cl.velocity[1])) * cl.velocity[1];
+	
 //Con_Printf ("speed: %5.1f\n", Length(cl.velocity));
 	bob = bob*0.3 + bob*0.7*sin(cycle);
 	if (bob > 4)

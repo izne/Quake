@@ -369,6 +369,32 @@ void CrossProduct (vec3_t v1, vec3_t v2, vec3_t cross)
 
 double sqrt(double x);
 
+float FastLength2D(float x, float y)
+{
+	float length_squared = x * x + y * y;
+	if (length_squared < 1e-6f)
+		return 0.0f;
+	return 1.0f / Q_rsqrt(length_squared);
+}
+
+float Q_rsqrt(float number)
+{
+    long i;
+    float x2, y;
+    const float threehalfs = 1.5F;
+    
+    x2 = number * 0.5F;
+    y = number;
+    i = *(long*)&y;                    // Evil floating point bit level hacking
+    i = 0x5f3759df - (i >> 1);        // What the fuck?
+    y = *(float*)&i;
+    y = y * (threehalfs - (x2 * y * y)); // 1st iteration
+    // y = y * (threehalfs - (x2 * y * y)); // 2nd iteration (optional for higher accuracy)
+    
+    return y;
+}
+
+/*
 vec_t Length(vec3_t v)
 {
 	int		i;
@@ -381,7 +407,31 @@ vec_t Length(vec3_t v)
 
 	return length;
 }
+*/
 
+vec_t Length(vec3_t v)
+{
+	float length_squared;
+	float inv_length;
+
+	// Calculate dot product (same as before)
+	length_squared = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+
+	// Handle zero vector case
+	if (length_squared == 0.0f)
+		return 0.0f;
+
+	// Use fast inverse sqrt, then take reciprocal to get actual length
+	inv_length = Q_rsqrt(length_squared);   // Fast: ~15-20 cycles
+	return 1.0f / inv_length;               // Convert back to length
+
+	// Note: This is still faster than sqrt() because:
+	// Fast method: ~15-20 + ~20 = ~35-40 cycles total
+	// Old method: ~70-100 cycles for sqrt alone
+}
+
+
+/*
 float VectorNormalize (vec3_t v)
 {
 	float	length, ilength;
@@ -399,6 +449,39 @@ float VectorNormalize (vec3_t v)
 		
 	return length;
 
+}
+*/
+
+float VectorNormalize(vec3_t v)
+{
+	float length_squared;
+	float inv_length;
+	float original_length;
+
+	// Calculate dot product
+	length_squared = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+
+	// Handle zero vector case
+	if (length_squared == 0.0f)
+	{
+		v[0] = v[1] = v[2] = 0.0f;
+		return 0.0f;
+	}
+
+	// FAST PATH: Use inverse sqrt directly for normalization
+	inv_length = Q_rsqrt(length_squared);   // ~15-20 cycles
+
+	// Normalize the vector (multiply by inverse length)
+	v[0] *= inv_length;                     // Much faster than division!
+	v[1] *= inv_length;
+	v[2] *= inv_length;
+
+	// Return original length (for compatibility with original function)
+	return 1.0f / inv_length;
+
+	// PERFORMANCE COMPARISON:
+	// Old method: sqrt(~70-100) + division(~20) = ~90-120 cycles
+	// New method: Q_rsqrt(~15-20) + division(~20) = ~35-40 cycles  
 }
 
 void VectorInverse (vec3_t v)

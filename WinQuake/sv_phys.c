@@ -1408,7 +1408,9 @@ void SV_Physics_Step (edict_t *ent)
 			if (!(ent->v.health <= 0.0 && !SV_CheckBottom(ent)))
 			{
 				vel = ent->v.velocity;
-				speed = sqrt(vel[0]*vel[0] +vel[1]*vel[1]);
+				//speed = sqrt(vel[0]*vel[0] +vel[1]*vel[1]);
+				//speed = 1.0f / Q_rsqrt(vel[0] * vel[0] + vel[1] * vel[1]);
+				speed = FastLength2D(vel[0], vel[1]);
 				if (speed)
 				{
 					friction = sv_friction.value;

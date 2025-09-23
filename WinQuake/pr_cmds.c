@@ -447,7 +447,8 @@ void PF_vectoangles (void)
 		if (yaw < 0)
 			yaw += 360;
 
-		forward = sqrt (value1[0]*value1[0] + value1[1]*value1[1]);
+		//forward = sqrt (value1[0]*value1[0] + value1[1]*value1[1]);
+		forward = 1.0f / Q_rsqrt(value1[0] * value1[0] + value1[1] * value1[1]);
 		pitch = (int) (atan2(value1[2], forward) * 180 / M_PI);
 		if (pitch < 0)
 			pitch += 360;
