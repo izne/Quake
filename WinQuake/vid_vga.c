@@ -23,13 +23,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // TODO: proper handling of page-swap failure
 
+#include <conio.h>    /* for inp()/outp() and inportb/outportb in Watcom */
+
 #include <dos.h>
 
 #include "quakedef.h"
 #include "d_local.h"
 #include "dosisms.h"
 #include "vid_dos.h"
+
+#ifdef __DJGPP__
 #include <dpmi.h>
+#endif
 
 extern regs_t regs;
 

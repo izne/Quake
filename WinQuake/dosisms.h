@@ -28,6 +28,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int dos_lockmem(void *addr, int size);
 int dos_unlockmem(void *addr, int size);
 
+#ifdef __WATCOMC__
+    #include <i86.h> 		// Union REGS
+    typedef union REGS regs_t;
+
+#else					 	// Keep original layout for DJGPP)
+
 typedef union {
 	struct {
 		unsigned long edi;
@@ -69,6 +75,8 @@ typedef union {
 		unsigned char al, ah, eax_b2, eax_b3;
 	} h;
 } regs_t;
+
+#endif
 
 unsigned int ptr2real(void *ptr);
 void *real2ptr(unsigned int real);
