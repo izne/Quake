@@ -3,9 +3,9 @@
 #include <math.h>
 #include <sys/timeb.h>
 
-#define POOL_SIZE 1024
+#define POOL_SIZE 2048 // 1024
 
-// wcl386 -q -fp3 -of -lm -l=dos4g sq7test.c
+// wcl386 -q -d0 -4s -ol -fp3 -lm -l=dos4g sq7test.c
 
 typedef struct {
     float x, y, z;
@@ -52,7 +52,7 @@ float rand_float(float min, float max)
 }
 
 
-vec3 normalize_libc(vec3 v) // Normalization (libc sqrt)
+vec3 normalize_sqrt(vec3 v) // Normalization (libc sqrt)
 {
     float len = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
     if (len > 0.0f) v.x /= len; v.y /= len; v.z /= len;
@@ -69,26 +69,25 @@ vec3 normalize_qrsqrt(vec3 v) // Normalization (Q_rsqrt)
 
 int main(int argc, char *argv[]) {
     int i;
-	long N = 1000000;   // default iterations
+	long N = 64000;   // default iterations
     volatile vec3 sink;
     double t0, t1, time_libc, time_qrsqrt;
     
 	vec3 pool[POOL_SIZE];
 
-    if (argc > 1) {
-        N = atol(argv[1]);
-        if (N <= 0) N = 1000000;
-    }
+    if (argc > 1) N = atol(argv[1]);
+	
+	printf("\nQuake3 Q_rsqrt() vs LibC sqrt() comparison, v1.0\n\n");
 
     if (in_protected_mode())
-        printf("\nRunning in PROTECTED mode.\n");
+        printf("Running in PROTECTED mode.\n");
     else {
-        printf("\nRunning in REAL mode (not supported). Quitting.\n");
+        printf("Running in REAL mode (not supported). Quitting.\n");
         return 1;
     }
 
 	printf("Preparing data...\n");
-    srand(42);
+    srand(rand()*100); //42
 
     for (i = 0; i < POOL_SIZE; i++) // Pool of random vectors (with mixed magnitudes)
 	{
@@ -111,7 +110,7 @@ int main(int argc, char *argv[]) {
 
     // --- LibC sqrt version ---
     t0 = now_sec();
-    for (i = 0; i < N; i++) sink = normalize_libc(pool[i % POOL_SIZE]);
+    for (i = 0; i < N; i++) sink = normalize_sqrt(pool[i % POOL_SIZE]);
     t1 = now_sec();
     time_libc = t1 - t0;
 
@@ -123,15 +122,17 @@ int main(int argc, char *argv[]) {
 
 	// Output
     printf("\n===== Vector Normalization =====\n");
-    printf(" Iterations     : %ld\n", N);
-    printf(" Pool size      : %d\n", POOL_SIZE);
-    printf(" LibC sqrt()    : %.3f s\n", time_libc);
-    printf(" Quake3 rsqrt() : %.3f s\n", time_qrsqrt);
+    printf(" Iterations  : %ld\n", N);
+    printf(" Pool size   : %d\n", POOL_SIZE);
+    printf(" LibC sqrt() : %.3f s\n", time_libc);
+    printf(" Q_rsqrt()   : %.3f s\n", time_qrsqrt);
 
     if (time_qrsqrt < time_libc)
-		printf(" Speed up       : %.2fx faster\n", time_libc / time_qrsqrt);
-    else
-        printf(" Slow down      : %.2fx slower\n", time_qrsqrt / time_libc);
+		printf(" Speeding up : %.3fx faster\n", time_libc / time_qrsqrt);
+    else if (time_qrsqrt > time_libc)
+        printf(" Hmm ...     : %.3fx slower\n", time_qrsqrt / time_libc);
+	else
+		printf(" No change.");
 
     return 0;
 }
