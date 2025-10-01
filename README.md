@@ -41,7 +41,6 @@ ASMFLAGS = -4 -fp5 -mf -bt=dos
 ```
 
 
-
 ## Testing
 Results of the experiment:
 - Stock 1996 Quake 1.06: 14.4 FPS
@@ -52,3 +51,11 @@ Results of the experiment:
 - GPL Quake + Q_rsqrt() + Watcom C/DOS4GW: ?? FPS
 - GPL Quake + Q_rsqrt() + noaudio/nonetwork + DJGPP/CWSDPMI: ?? FPS
 - GPL Quake + Q_rsqrt() + noaudio/nonetwork + Watcom C/DOS4GW: ?? FPS
+
+## Modular testing
+**tests/sq7test.c** - compares Q_rsqrt() with LibC's sqrt() using dnamic data generation and DOS protected mode.
+
+Compile with the following optimizations
+```
+wcl386 -q -d0 -4r -ol -fp3 -lm -l=dos4g sq7test.c
+```

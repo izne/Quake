@@ -1,15 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <sys/timeb.h>
+#include <dos.h>
+#include <conio.h>
 
-#define POOL_SIZE 2048 // 1024
+#define POOL_SIZE 1024 // 1024
 
-// wcl386 -q -d0 -4s -ol -fp3 -lm -l=dos4g sq7test.c
 
-typedef struct {
-    float x, y, z;
-} vec3;
+// PIT работи на 1.193182 MHz (цикъл = ~0.838 µs)
+#define PIT_FREQ 1193182.0
+
+// wcl386 -q -d0 -4r -ol -fp3 -lm -l=dos4g sq7test.c
+
+
+typedef struct { float x, y, z; } vec3;
+
 
 int in_protected_mode(void) {
     unsigned short msw;
@@ -39,12 +44,31 @@ float Q_rsqrt( float number ) // Quake3 fast inverse sqrt
 }
 
 
-double now_sec(void) // Timer (seconds)
+unsigned get_pit(void)
 {
-    struct timeb t;
-    ftime(&t);
-    return (double)t.time + (t.millitm / 1000.0);
+    unsigned value;
+    outp(0x43, 0x00);             // latch counter 0
+    value = inp(0x40);            // low byte
+    value |= inp(0x40) << 8;      // high byte
+    return value;
 }
+
+
+double pit_time_sec(void)
+{
+    unsigned count;
+    unsigned long bios_ticks;
+    unsigned long long total_ticks;
+
+    outp(0x43, 0x00);
+    count  = inp(0x40);
+    count |= ((unsigned)inp(0x40)) << 8;
+    bios_ticks = *(volatile unsigned long*)0x46C;
+    total_ticks = ((unsigned long long)bios_ticks << 16) + (0xFFFF - count);
+
+    return (double)total_ticks / PIT_FREQ;
+}
+
 
 float rand_float(float min, float max)
 {
@@ -55,7 +79,12 @@ float rand_float(float min, float max)
 vec3 normalize_sqrt(vec3 v) // Normalization (libc sqrt)
 {
     float len = sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-    if (len > 0.0f) v.x /= len; v.y /= len; v.z /= len;
+	if (len > 0.0f)
+	{
+		v.x /= len;
+		v.y /= len;
+		v.z /= len;
+	}
     return v;
 }
 
@@ -63,13 +92,16 @@ vec3 normalize_sqrt(vec3 v) // Normalization (libc sqrt)
 vec3 normalize_qrsqrt(vec3 v) // Normalization (Q_rsqrt)
 {
     float len_inv = Q_rsqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-    v.x *= len_inv; v.y *= len_inv; v.z *= len_inv;
+    v.x *= len_inv; 
+	v.y *= len_inv; 
+	v.z *= len_inv;
     return v;
 }
 
+
 int main(int argc, char *argv[]) {
     int i;
-	long N = 64000;   // default iterations
+	long N = 1000000; //64000;   // default iterations
     volatile vec3 sink;
     double t0, t1, time_libc, time_qrsqrt;
     
@@ -87,7 +119,7 @@ int main(int argc, char *argv[]) {
     }
 
 	printf("Preparing data...\n");
-    srand(rand()*100); //42
+    srand(42); //rand()*100 
 
     for (i = 0; i < POOL_SIZE; i++) // Pool of random vectors (with mixed magnitudes)
 	{
@@ -109,28 +141,28 @@ int main(int argc, char *argv[]) {
     }
 
     // --- LibC sqrt version ---
-    t0 = now_sec();
+    t0 = pit_time_sec();
     for (i = 0; i < N; i++) sink = normalize_sqrt(pool[i % POOL_SIZE]);
-    t1 = now_sec();
+    t1 = pit_time_sec();
     time_libc = t1 - t0;
 
     // --- Quake Q_rsqrt version ---
-    t0 = now_sec();
+    t0 = pit_time_sec();
     for (i = 0; i < N; i++) sink = normalize_qrsqrt(pool[i % POOL_SIZE]);
-    t1 = now_sec();
+    t1 = pit_time_sec();
     time_qrsqrt = t1 - t0;
 
 	// Output
     printf("\n===== Vector Normalization =====\n");
     printf(" Iterations  : %ld\n", N);
     printf(" Pool size   : %d\n", POOL_SIZE);
-    printf(" LibC sqrt() : %.3f s\n", time_libc);
-    printf(" Q_rsqrt()   : %.3f s\n", time_qrsqrt);
+    printf(" LibC sqrt() : %.6f s\n", time_libc);
+    printf(" Q_rsqrt()   : %.6f s\n", time_qrsqrt);
 
     if (time_qrsqrt < time_libc)
-		printf(" Speeding up : %.3fx faster\n", time_libc / time_qrsqrt);
+		printf(" Speeding up : %.6fx faster\n", time_libc / time_qrsqrt);
     else if (time_qrsqrt > time_libc)
-        printf(" Hmm ...     : %.3fx slower\n", time_qrsqrt / time_libc);
+        printf(" Wow ...     : %.6fx slower\n", time_qrsqrt / time_libc);
 	else
 		printf(" No change.");
 
