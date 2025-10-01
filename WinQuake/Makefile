@@ -87,27 +87,6 @@ $(TARGET): $(COBJS)
 {.}.c{$(BUILDDIR)}.obj:
 	$(CC) $(CFLAGS) -fo=$@ $<
 
-# Specific optimizations for key files with fast inverse sqrt
-$(BUILDDIR)\mathlib.obj: mathlib.c
-	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
-	$(CC) $(CFLAGS) -otexan -5 -fo=$@ mathlib.c
-
-$(BUILDDIR)\sv_phys.obj: sv_phys.c
-	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
-	$(CC) $(CFLAGS) -otexan -5 -fo=$@ sv_phys.c
-
-$(BUILDDIR)\sv_user.obj: sv_user.c
-	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
-	$(CC) $(CFLAGS) -otexan -5 -fo=$@ sv_user.c
-
-$(BUILDDIR)\view.obj: view.c
-	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
-	$(CC) $(CFLAGS) -otexan -5 -fo=$@ view.c
-
-$(BUILDDIR)\pr_cmds.obj: pr_cmds.c
-	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
-	$(CC) $(CFLAGS) -otexan -5 -fo=$@ pr_cmds.c
-
 # Clean up
 clean: .SYMBOLIC
 	@if exist $(BUILDDIR)\*.obj del $(BUILDDIR)\*.obj
@@ -118,33 +97,22 @@ clean: .SYMBOLIC
 # Release build (no debug info, maximum optimization)
 release: .SYMBOLIC clean
 	@echo Building optimized release version...
-	@wmake CFLAGS="-4 -5 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -d0 -dDOS -dUSE_FAST_INVERSE_SQRT -i=."
+	@wmake CFLAGS="-d0 $(CFLAGS)"
 
 # Debug build
 debug: .SYMBOLIC clean
 	@echo Building debug version...
-	@wmake CFLAGS="-4 -5 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -wx -zq -d2 -dDOS -dUSE_FAST_INVERSE_SQRT -i=."
-
-# CWSDPMI version (no built-in extender)
-cwsdpmi: .SYMBOLIC $(COBJS)
-	$(LINK) $(LINKFLAGS_CWSDPMI) name qkcwsdpmi.exe file { $(COBJS) }
-
-# DOS32A version (alternative to DOS4GW)  
-dos32a: .SYMBOLIC $(COBJS)
-	$(LINK) system dos32a name quake32a.exe file { $(COBJS) }
+	@wmake CFLAGS="-d2 $(CFLAGS)"
 
 # Performance profiling build
 profile: .SYMBOLIC
-	@wmake CFLAGS="-4 -5 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -et -s -wx -zq -d1 -dDOS -dUSE_FAST_INVERSE_SQRT -i=."
+	@wmake CFLAGS="-d1 $(CFLAGS)"
 
 # Help
 help: .SYMBOLIC
 	@echo Available targets:
 	@echo   all      - Build optimized executable (default)
 	@echo   release  - Maximum optimization, no debug info
-	@echo   debug    - Debug build with symbols
-	@echo   cwsdpmi  - Build for CWSDPMI extender (historically accurate)
-	@echo   dos32a   - Build with DOS32A extender instead of DOS4GW
 	@echo   profile  - Build with profiling enabled
 	@echo   clean    - Remove object files and executable
 	@echo   help     - Show this help
