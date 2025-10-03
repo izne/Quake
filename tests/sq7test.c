@@ -1,22 +1,40 @@
+// Quake3 fast inverse q_rsqrt() vs Lib C sqrt() comparison benchmark
+// v 1.0
+// 2025 Dimitar Angelov <funkamateur@gmail.com>
+//
+// Compile:
+// wcl386 -q -d0 -4s -4r -fp5 -mf -ol -ol+ -op -ot -oh -ox -lm -l=dos4g sq7test.c
+/*
+ -4s 486 stack calling conventions
+ -4r 486 register calling conventions
+ -fp5 optimize floating point code for Pentium
+ -d0 no debugging info
+ -ol perform loop optimizations
+ -ol+ ol with loop unrolling
+ -op improve floating point consistency
+ -ot optimize for time (speed)
+ -oh enable repeated optimizations
+ -ox maximum optimizations
+ -ms memory model (small, fast, large)
+ 
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <dos.h>
 #include <conio.h>
 
-#define POOL_SIZE 1024 // 1024
-
-
-// PIT работи на 1.193182 MHz (цикъл = ~0.838 µs)
+#define POOL_SIZE 1024
 #define PIT_FREQ 1193182.0
-
-// wcl386 -q -d0 -4r -ol -fp3 -lm -l=dos4g sq7test.c
 
 
 typedef struct { float x, y, z; } vec3;
 
 
-int in_protected_mode(void) {
+int in_protected_mode(void)
+{
     unsigned short msw;
     __asm {
         smsw ax
@@ -99,35 +117,35 @@ vec3 normalize_qrsqrt(vec3 v) // Normalization (Q_rsqrt)
 }
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int i;
-	long N = 1000000; //64000;   // default iterations
+	long N = 1000000;
     volatile vec3 sink;
-    double t0, t1, time_libc, time_qrsqrt;
-    
-	vec3 pool[POOL_SIZE];
-
+	vec3 result, pool[POOL_SIZE];
+    double t0, t1, time_sqrt, time_qrsqrt;
+	volatile float sink_x = 0, sink_y = 0, sink_z = 0;
+	
     if (argc > 1) N = atol(argv[1]);
 	
 	printf("\nQuake3 Q_rsqrt() vs LibC sqrt() comparison, v1.0\n\n");
 
     if (in_protected_mode())
         printf("Running in PROTECTED mode.\n");
-    else {
-        printf("Running in REAL mode (not supported). Quitting.\n");
+    else
+	{
+        printf("Running in REAL mode. Not supported, quitting.\n");
         return 1;
     }
 
-	printf("Preparing data...\n");
-    srand(42); //rand()*100 
-
+	printf("Preparing data pool ...");
+    srand(42);
     for (i = 0; i < POOL_SIZE; i++) // Pool of random vectors (with mixed magnitudes)
 	{
         float vx = rand_float(-100.0f, 100.0f);
         float vy = rand_float(-100.0f, 100.0f);
         float vz = rand_float(-100.0f, 100.0f);
 
-        // occasional large vectors
         if (rand() % 100 < 10)
 		{
             vx *= 1000.0f;
@@ -139,32 +157,47 @@ int main(int argc, char *argv[]) {
         pool[i].y = vy;
         pool[i].z = vz;
     }
+	
+	// LibC sqrt()
+	printf("\nTesting LibC sqrt() ...\n");
+	t0 = pit_time_sec();
+	for (i = 0; i < N; i++)
+	{
+		result = normalize_sqrt(pool[i & (POOL_SIZE-1)]);
+		sink_x = result.x;
+		sink_y = result.y;
+		sink_z = result.z;
+	}
+	t1 = pit_time_sec();
+	time_sqrt = t1 - t0;
+	
+	// Pause
+	delay(1000);
 
-    // --- LibC sqrt version ---
-    t0 = pit_time_sec();
-    for (i = 0; i < N; i++) sink = normalize_sqrt(pool[i % POOL_SIZE]);
-    t1 = pit_time_sec();
-    time_libc = t1 - t0;
-
-    // --- Quake Q_rsqrt version ---
-    t0 = pit_time_sec();
-    for (i = 0; i < N; i++) sink = normalize_qrsqrt(pool[i % POOL_SIZE]);
-    t1 = pit_time_sec();
-    time_qrsqrt = t1 - t0;
+    // Quake3 Q_rsqrt()
+	printf("Testing Quake3 Q_rsqrt() ...\n");
+	t0 = pit_time_sec();
+	for (i = 0; i < N; i++)
+	{
+		result = normalize_qrsqrt(pool[i & (POOL_SIZE-1)]);
+		sink_x = result.x;
+		sink_y = result.y;
+		sink_z = result.z;
+	}
+	t1 = pit_time_sec();
+	time_qrsqrt = t1 - t0;
 
 	// Output
-    printf("\n===== Vector Normalization =====\n");
-    printf(" Iterations  : %ld\n", N);
-    printf(" Pool size   : %d\n", POOL_SIZE);
-    printf(" LibC sqrt() : %.6f s\n", time_libc);
-    printf(" Q_rsqrt()   : %.6f s\n", time_qrsqrt);
+    printf("\n==== Vector Normalization ====\n");
+    printf(" Iterations  : %ld\n", 		N);
+    printf(" Pool size   : %d\n", 		POOL_SIZE);
+    printf(" LibC sqrt() : %.6f s\n", 	time_sqrt);
+    printf(" Q_rsqrt()   : %.6f s\n",	time_qrsqrt);
 
-    if (time_qrsqrt < time_libc)
-		printf(" Speeding up : %.6fx faster\n", time_libc / time_qrsqrt);
-    else if (time_qrsqrt > time_libc)
-        printf(" Wow ...     : %.6fx slower\n", time_qrsqrt / time_libc);
-	else
-		printf(" No change.");
+    if (time_qrsqrt < time_sqrt)
+		printf(" Speeding up : %.6fx faster\n", time_sqrt / time_qrsqrt);
+    else
+        printf(" Meh ...     : %.6fx slower\n", time_qrsqrt / time_sqrt);
 
     return 0;
 }
