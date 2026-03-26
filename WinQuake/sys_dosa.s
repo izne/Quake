@@ -35,7 +35,7 @@ public  _dos_inportw_
 public  _ptr2real_
 public  _real2ptr_
 public  _dos_getmemory_
-public  _dos_int86_
+;public  _dos_int86_  ; now implemented in dos_int86.c
 public  _VGA_UpdatePlanarScreen_
 public  _VGA_UpdateLinearScreen_
 
@@ -47,7 +47,7 @@ public  dos_inportw_
 public  ptr2real_
 public  real2ptr_
 public  dos_getmemory_
-public  dos_int86_
+;public  dos_int86_    ; now implemented in dos_int86.c
 public  VGA_UpdatePlanarScreen_
 public  VGA_UpdateLinearScreen_
 public  outportb_
@@ -114,10 +114,7 @@ dos_getmemory_ proc near
     ret
 dos_getmemory_ endp
 
-dos_int86_ proc near
-    xor     ax, ax
-    ret
-dos_int86_ endp
+; dos_int86_ is now implemented in dos_int86.c using Watcom int386()
 
 VGA_UpdatePlanarScreen_ proc near
     ret
@@ -135,7 +132,7 @@ public  _dos_inportw_
 public  _ptr2real_
 public  _real2ptr_
 public  _dos_getmemory_
-public  _dos_int86_
+; _dos_int86_ is now implemented in dos_int86.c
 public  _VGA_UpdatePlanarScreen_
 public  _VGA_UpdateLinearScreen_
 
@@ -172,10 +169,7 @@ _dos_getmemory_ proc near
     ret
 _dos_getmemory_ endp
 
-_dos_int86_ proc near
-    xor     ax, ax
-    ret
-_dos_int86_ endp
+; _dos_int86_ is now implemented in dos_int86.c
 
 _VGA_UpdatePlanarScreen_ proc near
     ret
@@ -220,6 +214,8 @@ dos_outportw proc near
 dos_outportw endp
 
 ; ================ DOS INTERRUPT AND MEMORY ================
+; Note: dos_int86 is now implemented in dos_int86.c using Watcom int386()
+; These are kept for any legacy callers
 
 _dos_int86 proc near
     xor     ax, ax

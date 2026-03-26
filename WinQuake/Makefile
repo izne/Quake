@@ -40,7 +40,8 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     snd_mix.c sv_main.c sv_move.c sv_phys.c sv_user.c &
     sys_dos_wc.c vid_dos_wc.c vid_vga.c view.c wad.c &
     world.c snd_gus.c zone.c in_dos.c &
-	net_main.c net_dos_wc.c	net_vcr.c net_loop.c 
+	net_main.c net_dos_wc.c	net_vcr.c net_loop.c &
+	dos_int86.c 
 
 # Assembly source files - DOS4GW stubs only
 ASMSOURCES = dosasm.s sys_dosa.s
@@ -69,7 +70,8 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
      $(BUILDDIR)\vid_dos_wc.obj $(BUILDDIR)\vid_vga.obj $(BUILDDIR)\view.obj &
      $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
      $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj &
-	$(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj
+ 	 $(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj &
+ 	 $(BUILDDIR)\dos_int86.obj
 
 # Assembly object files - only the stub files
 AOBJS = $(BUILDDIR)\dosasm.obj $(BUILDDIR)\sys_dosa.obj
