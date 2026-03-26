@@ -1,11 +1,10 @@
 #include "asm_i386_asm.h"
 
-.data
 fpenv:	.long	0, 0, 0, 0, 0, 0, 0, 0
 
 .text
-.globl	C(StartMSRInterval)
-C(StartMSRInterval):
+.globl	_StartMSRInterval
+_StartMSRInterval:
 	movl	$0x11,%ecx	// read the CESR
 	.byte	0x0F
 	.byte	0x32		// RDMSR
@@ -36,8 +35,8 @@ C(StartMSRInterval):
 
 	ret
 
-.globl	C(EndMSRInterval)
-C(EndMSRInterval):
+.globl	_EndMSRInterval
+_EndMSRInterval:
 	movl	$0x12,%ecx	// counter 0
 	.byte	0x0F
 	.byte	0x32		// RDMSR
@@ -50,8 +49,8 @@ Lxxx:	.long	0
 
 	.text
 
-.globl C(setstackcheck)
-C(setstackcheck):
+.globl _setstackcheck
+_setstackcheck:
 
 	movl	%esp,%eax
 	subl	$0x38000,%eax
@@ -61,8 +60,8 @@ C(setstackcheck):
 	ret
 
 
-.globl C(dostackcheck)
-C(dostackcheck):
+.globl _dostackcheck
+_dostackcheck:
 
 	movl	Lxxx,%edx
 	movl	$0,%eax

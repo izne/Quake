@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,8 +34,8 @@ fpenv:
 
 	.text
 
-.globl C(MaskExceptions)
-C(MaskExceptions):
+.globl _MaskExceptions
+_MaskExceptions:
 	fnstenv	fpenv
 	orl		$0x3F,fpenv
 	fldenv	fpenv
@@ -44,8 +43,8 @@ C(MaskExceptions):
 	ret
 
 #if 0
-.globl C(unmaskexceptions)
-C(unmaskexceptions):
+.globl _unmaskexceptions
+_unmaskexceptions:
 	fnstenv	fpenv
 	andl		$0xFFFFFFE0,fpenv
 	fldenv	fpenv
@@ -65,33 +64,33 @@ pushed_cw:	.long	0
 
 	.text
 
-.globl C(Sys_LowFPPrecision)
-C(Sys_LowFPPrecision):
+.globl _Sys_LowFPPrecision
+_Sys_LowFPPrecision:
 	fldcw	single_cw
 
 	ret
 
-.globl C(Sys_HighFPPrecision)
-C(Sys_HighFPPrecision):
+.globl _Sys_HighFPPrecision
+_Sys_HighFPPrecision:
 	fldcw	full_cw
 
 	ret
 
-.globl C(Sys_PushFPCW_SetHigh)
-C(Sys_PushFPCW_SetHigh):
+.globl _Sys_PushFPCW_SetHigh
+_Sys_PushFPCW_SetHigh:
 	fnstcw	pushed_cw
 	fldcw	full_cw
 
 	ret
 
-.globl C(Sys_PopFPCW)
-C(Sys_PopFPCW):
+.globl _Sys_PopFPCW
+_Sys_PopFPCW:
 	fldcw	pushed_cw
 
 	ret
 
-.globl C(Sys_SetFPCW)
-C(Sys_SetFPCW):
+.globl _Sys_SetFPCW
+_Sys_SetFPCW:
 	fnstcw	cw
 	movl	cw,%eax
 #if	id386

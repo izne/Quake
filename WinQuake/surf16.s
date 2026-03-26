@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -48,34 +47,34 @@ blockjumptable16:
 	.text
 
 	.align 4
-.globl C(R_Surf16Start)
-C(R_Surf16Start):
+.globl _R_Surf16Start
+_R_Surf16Start:
 
 	.align 4
-.globl C(R_DrawSurfaceBlock16)
-C(R_DrawSurfaceBlock16):
+.globl _R_DrawSurfaceBlock16
+_R_DrawSurfaceBlock16:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
 	pushl	%ebx
 
-	movl	C(blocksize),%eax
-	movl	C(prowdestbase),%edi
-	movl	C(pbasesource),%esi
-	movl	C(sourcesstep),%ebx
+	movl	_blocksize,%eax
+	movl	_prowdestbase,%edi
+	movl	_pbasesource,%esi
+	movl	_sourcesstep,%ebx
 	movl	blockjumptable16-4(,%eax,2),%ecx
 	movl	%eax,k
 	movl	%ecx,loopentry
-	movl	C(lightleft),%edx
-	movl	C(lightright),%ebp
+	movl	_lightleft,%edx
+	movl	_lightright,%ebp
 
 Lblockloop16:
 
 	subl	%edx,%ebp
-	movb	C(blockdivshift),%cl
+	movb	_blockdivshift,%cl
 	sarl	%cl,%ebp
 	jns		Lp1_16
-	testl	C(blockdivmask),%ebp
+	testl	_blockdivmask,%ebp
 	jz		Lp1_16
 	incl	%ebp
 Lp1_16:
@@ -89,28 +88,28 @@ Lp1_16:
 
 #include "block16.h"
 
-	movl	C(pbasesource),%esi
-	movl	C(lightleft),%edx
-	movl	C(lightright),%ebp
-	movl	C(sourcetstep),%eax
-	movl	C(lightrightstep),%ecx
-	movl	C(prowdestbase),%edi
+	movl	_pbasesource,%esi
+	movl	_lightleft,%edx
+	movl	_lightright,%ebp
+	movl	_sourcetstep,%eax
+	movl	_lightrightstep,%ecx
+	movl	_prowdestbase,%edi
 
 	addl	%eax,%esi
 	addl	%ecx,%ebp
 
-	movl	C(lightleftstep),%eax
-	movl	C(surfrowbytes),%ecx
+	movl	_lightleftstep,%eax
+	movl	_surfrowbytes,%ecx
 
 	addl	%eax,%edx
 	addl	%ecx,%edi
 
-	movl	%esi,C(pbasesource)
-	movl	%ebp,C(lightright)
+	movl	%esi,_pbasesource
+	movl	%ebp,_lightright
 	movl	k,%eax
-	movl	%edx,C(lightleft)
+	movl	%edx,_lightleft
 	decl	%eax
-	movl	%edi,C(prowdestbase)
+	movl	%edi,_prowdestbase
 	movl	%eax,k
 	jnz		Lblockloop16
 
@@ -120,8 +119,8 @@ Lp1_16:
 	popl	%ebp				// restore the caller's stack frame
 	ret
 
-.globl C(R_Surf16End)
-C(R_Surf16End):
+.globl _R_Surf16End
+_R_Surf16End:
 
 //----------------------------------------------------------------------
 // Code patching routines
@@ -150,11 +149,11 @@ LPatchTable16:
 	.text
 
 	.align 4
-.globl C(R_Surf16Patch)
-C(R_Surf16Patch):
+.globl _R_Surf16Patch
+_R_Surf16Patch:
 	pushl	%ebx
 
-	movl	C(colormap),%eax
+	movl	_colormap,%eax
 	movl	$LPatchTable16,%ebx
 	movl	$16,%ecx
 LPatchLoop16:

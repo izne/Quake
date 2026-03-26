@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -38,46 +37,46 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // big structure, like cl or sv?
 
 	.align	4
-.globl	C(d_sdivzstepu)
-.globl	C(d_tdivzstepu)
-.globl	C(d_zistepu)
-.globl	C(d_sdivzstepv)
-.globl	C(d_tdivzstepv)
-.globl	C(d_zistepv)
-.globl	C(d_sdivzorigin)
-.globl	C(d_tdivzorigin)
-.globl	C(d_ziorigin)
-C(d_sdivzstepu):	.single	0
-C(d_tdivzstepu):	.single	0
-C(d_zistepu):		.single	0
-C(d_sdivzstepv):	.single	0
-C(d_tdivzstepv):	.single	0
-C(d_zistepv):		.single	0
-C(d_sdivzorigin):	.single	0
-C(d_tdivzorigin):	.single	0
-C(d_ziorigin):		.single	0
+.globl	_d_sdivzstepu
+.globl	_d_tdivzstepu
+.globl	_d_zistepu
+.globl	_d_sdivzstepv
+.globl	_d_tdivzstepv
+.globl	_d_zistepv
+.globl	_d_sdivzorigin
+.globl	_d_tdivzorigin
+.globl	_d_ziorigin
+_d_sdivzstepu:	.single	0
+_d_tdivzstepu:	.single	0
+_d_zistepu:		.single	0
+_d_sdivzstepv:	.single	0
+_d_tdivzstepv:	.single	0
+_d_zistepv:		.single	0
+_d_sdivzorigin:	.single	0
+_d_tdivzorigin:	.single	0
+_d_ziorigin:		.single	0
 
-.globl	C(sadjust)
-.globl	C(tadjust)
-.globl	C(bbextents)
-.globl	C(bbextentt)
-C(sadjust):			.long	0
-C(tadjust):			.long	0
-C(bbextents):		.long	0
-C(bbextentt):		.long	0
+.globl	_sadjust
+.globl	_tadjust
+.globl	_bbextents
+.globl	_bbextentt
+_sadjust:			.long	0
+_tadjust:			.long	0
+_bbextents:		.long	0
+_bbextentt:		.long	0
 
-.globl	C(cacheblock)
-.globl	C(d_viewbuffer)
-.globl	C(cachewidth)
-.globl	C(d_pzbuffer)
-.globl	C(d_zrowbytes)
-.globl	C(d_zwidth)
-C(cacheblock):		.long	0
-C(cachewidth):		.long	0
-C(d_viewbuffer):	.long	0
-C(d_pzbuffer):		.long	0
-C(d_zrowbytes):		.long	0
-C(d_zwidth):		.long	0
+.globl	_cacheblock
+.globl	_d_viewbuffer
+.globl	_cachewidth
+.globl	_d_pzbuffer
+.globl	_d_zrowbytes
+.globl	_d_zwidth
+_cacheblock:		.long	0
+_cachewidth:		.long	0
+_d_viewbuffer:	.long	0
+_d_pzbuffer:		.long	0
+_d_zrowbytes:		.long	0
+_d_zwidth:		.long	0
 
 
 //-------------------------------------------------------

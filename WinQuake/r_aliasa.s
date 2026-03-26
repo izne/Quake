@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,8 +39,8 @@ Lcoords:	.long	0, 0, 0
 #define fv			12+4
 #define pstverts	12+8
 
-.globl C(R_AliasTransformAndProjectFinalVerts)
-C(R_AliasTransformAndProjectFinalVerts):
+.globl _R_AliasTransformAndProjectFinalVerts
+_R_AliasTransformAndProjectFinalVerts:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -51,13 +50,13 @@ C(R_AliasTransformAndProjectFinalVerts):
 //	trivertx_t	*pverts;
 
 //	pverts = r_apverts;
-	movl	C(r_apverts),%esi
+	movl	_r_apverts,%esi
 
 //	for (i=0 ; i<r_anumverts ; i++, fv++, pverts++, pstverts++)
 //	{
 	movl	pstverts(%esp),%ebp
 	movl	fv(%esp),%edi
-	movl	C(r_anumverts),%ecx
+	movl	_r_anumverts,%ecx
 	subl	%edx,%edx
 
 Lloop:
@@ -76,13 +75,13 @@ Lloop:
 	fildl	Lcoords+8			// v[2] | v[1] | v[0]
 
 	fld		%st(2)				// v[0] | v[2] | v[1] | v[0]
-	fmuls	C(aliastransform)+32 // accum | v[2] | v[1] | v[0]
+	fmuls	_aliastransform+32 // accum | v[2] | v[1] | v[0]
 	fld		%st(2)				// v[1] | accum | v[2] | v[1] | v[0]
-	fmuls	C(aliastransform)+36 // accum2 | accum | v[2] | v[1] | v[0]
+	fmuls	_aliastransform+36 // accum2 | accum | v[2] | v[1] | v[0]
 	fxch	%st(1)				// accum | accum2 | v[2] | v[1] | v[0]
-	fadds	C(aliastransform)+44 // accum | accum2 | v[2] | v[1] | v[0]
+	fadds	_aliastransform+44 // accum | accum2 | v[2] | v[1] | v[0]
 	fld		%st(2)				// v[2] | accum | accum2 | v[2] | v[1] | v[0]
-	fmuls	C(aliastransform)+40 // accum3 | accum | accum2 | v[2] | v[1] |
+	fmuls	_aliastransform+40 // accum3 | accum | accum2 | v[2] | v[1] |
 								 //  v[0]
 	fxch	%st(1)				// accum | accum3 | accum2 | v[2] | v[1] | v[0]
 	faddp	%st(0),%st(2)		// accum3 | accum | v[2] | v[1] | v[0]
@@ -114,17 +113,17 @@ Lloop:
 	fxch	%st(3)				// v[0] | v[2] | v[1] | zi
 
 //		lightcos = DotProduct (plightnormal, r_plightvec);
-	flds	C(r_avertexnormals)(,%eax,4)
-	fmuls	C(r_plightvec)
-	flds	C(r_avertexnormals)+4(,%eax,4)
-	fmuls	C(r_plightvec)+4
-	flds	C(r_avertexnormals)+8(,%eax,4)
-	fmuls	C(r_plightvec)+8
+	flds	_r_avertexnormals)(,%eax,4
+	fmuls	_r_plightvec
+	flds	_r_avertexnormals)+4(,%eax,4
+	fmuls	_r_plightvec+4
+	flds	_r_avertexnormals)+8(,%eax,4
+	fmuls	_r_plightvec+8
 	fxch	%st(1)
 	faddp	%st(0),%st(2)
 	fld		%st(2)				 // v[0] | laccum | laccum2 | v[0] | v[2] |
 								 //  v[1] | zi
-	fmuls	C(aliastransform)+0  // xaccum | laccum | laccum2 | v[0] | v[2] |
+	fmuls	_aliastransform+0  // xaccum | laccum | laccum2 | v[0] | v[2] |
 								 //  v[1] | zi
 	fxch	%st(2)				 // laccum2 | laccum | xaccum | v[0] | v[2] |
 								 //  v[1] | zi
@@ -134,14 +133,14 @@ Lloop:
 //		if (lightcos < 0)
 //		{
 	fsts	Ltemp
-	movl	C(r_ambientlight),%eax
+	movl	_r_ambientlight,%eax
 	movb	Ltemp+3,%dl
 	testb	$0x80,%dl
 	jz		Lsavelight	// no need to clamp if only ambient lit, because
 						//  r_ambientlight is preclamped
 
 //			temp += (int)(r_shadelight * lightcos);
-	fmuls	C(r_shadelight)
+	fmuls	_r_shadelight
 // FIXME: fast float->int conversion?
 	fistpl	Ltemp
 	addl	Ltemp,%eax
@@ -168,31 +167,31 @@ Lp1:
 //				aliastransform[1][3]) * zi) + aliasycenter;
 //		fv->v[5] = zi;
 	fxch	%st(1)				 // v[0] | xaccum | v[2] | v[1] | zi
-	fmuls	C(aliastransform)+16 // yaccum | xaccum | v[2] | v[1] | zi
+	fmuls	_aliastransform+16 // yaccum | xaccum | v[2] | v[1] | zi
 	fxch	%st(3)				 // v[1] | xaccum | v[2] | yaccum | zi
 	fld		%st(0)				 // v[1] | v[1] | xaccum | v[2] | yaccum | zi
-	fmuls	C(aliastransform)+4	 // xaccum2 | v[1] | xaccum | v[2] | yaccum |zi
+	fmuls	_aliastransform+4	 // xaccum2 | v[1] | xaccum | v[2] | yaccum |zi
 	fxch	%st(1)				 // v[1] | xaccum2 | xaccum | v[2] | yaccum |zi
 	movl	%eax,fv_v+16(%edi)
-	fmuls	C(aliastransform)+20 // yaccum2 | xaccum2 | xaccum | v[2] | yaccum|
+	fmuls	_aliastransform+20 // yaccum2 | xaccum2 | xaccum | v[2] | yaccum|
 								 //  zi
 	fxch	%st(2)				 // xaccum | xaccum2 | yaccum2 | v[2] | yaccum|
 								 //  zi
-	fadds	C(aliastransform)+12 // xaccum | xaccum2 | yaccum2 | v[2] | yaccum|
+	fadds	_aliastransform+12 // xaccum | xaccum2 | yaccum2 | v[2] | yaccum|
 								 //  zi
 	fxch	%st(4)				 // yaccum | xaccum2 | yaccum2 | v[2] | xaccum|
 								 //  zi
-	fadds	C(aliastransform)+28 // yaccum | xaccum2 | yaccum2 | v[2] | xaccum|
+	fadds	_aliastransform+28 // yaccum | xaccum2 | yaccum2 | v[2] | xaccum|
 								 //  zi
 	fxch	%st(3)				 // v[2] | xaccum2 | yaccum2 | yaccum | xaccum|
 								 //  zi
 	fld		%st(0)				 // v[2] | v[2] | xaccum2 | yaccum2 | yaccum |
 								 //  xaccum | zi
-	fmuls	C(aliastransform)+8	 // xaccum3 | v[2] | xaccum2 | yaccum2 |yaccum|
+	fmuls	_aliastransform+8	 // xaccum3 | v[2] | xaccum2 | yaccum2 |yaccum|
 								 //  xaccum | zi
 	fxch	%st(1)				 // v[2] | xaccum3 | xaccum2 | yaccum2 |yaccum|
 								 //  xaccum | zi
-	fmuls	C(aliastransform)+24 // yaccum3 | xaccum3 | xaccum2 | yaccum2 |
+	fmuls	_aliastransform+24 // yaccum3 | xaccum3 | xaccum2 | yaccum2 |
 								 // yaccum | xaccum | zi
 	fxch	%st(5)				 // xaccum | xaccum3 | xaccum2 | yaccum2 |
 								 // yaccum | yaccum3 | zi
@@ -209,9 +208,9 @@ Lp1:
 	fxch	%st(1)				 // y | x/z | zi
 	fmul	%st(2),%st(0)		 // y/z | x/z | zi
 	fxch	%st(1)				 // x/z | y/z | zi
-	fadds	C(aliasxcenter)		 // u | y/z | zi
+	fadds	_aliasxcenter		 // u | y/z | zi
 	fxch	%st(1)				 // y/z | u | zi
-	fadds	C(aliasycenter)		 // v | u | zi
+	fadds	_aliasycenter		 // v | u | zi
 	fxch	%st(2)				 // zi | u | v
 // FIXME: fast float->int conversion?
 	fistpl	fv_v+20(%edi)		 // u | v

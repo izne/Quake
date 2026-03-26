@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,16 +34,16 @@ sb_v:		.long	0
 	.text
 
 	.align 4
-.globl C(R_Surf8Start)
-C(R_Surf8Start):
+.globl _R_Surf8Start
+_R_Surf8Start:
 
 //----------------------------------------------------------------------
 // Surface block drawer for mip level 0
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(R_DrawSurfaceBlock8_mip0)
-C(R_DrawSurfaceBlock8_mip0):
+.globl _R_DrawSurfaceBlock8_mip0
+_R_DrawSurfaceBlock8_mip0:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -52,13 +51,13 @@ C(R_DrawSurfaceBlock8_mip0):
 
 //		for (v=0 ; v<numvblocks ; v++)
 //		{
-	movl	C(r_lightptr),%ebx
-	movl	C(r_numvblocks),%eax
+	movl	_r_lightptr,%ebx
+	movl	_r_numvblocks,%eax
 
 	movl	%eax,sb_v
-	movl	C(prowdestbase),%edi
+	movl	_prowdestbase,%edi
 
-	movl	C(pbasesource),%esi
+	movl	_pbasesource,%esi
 
 Lv_loop_mip0:
 
@@ -69,16 +68,16 @@ Lv_loop_mip0:
 	movl	4(%ebx),%edx		// lightright
 
 	movl	%eax,%ebp
-	movl	C(r_lightwidth),%ecx
+	movl	_r_lightwidth,%ecx
 
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 	subl	%edx,%ebp
 
 	andl	$0xFFFFF,%ebp
 	leal	(%ebx,%ecx,4),%ebx
 
 //			lightptr += lightwidth;
-	movl	%ebx,C(r_lightptr)
+	movl	%ebx,_r_lightptr
 
 //			lightleftstep = (lightptr[0] - lightleft) >> blockdivshift;
 //			lightrightstep = (lightptr[1] - lightright) >> blockdivshift;
@@ -94,7 +93,7 @@ Lv_loop_mip0:
 	orl		$0xF0000000,%ebp
 
 	sarl	$4,%ebx
-	movl	%ecx,C(lightrightstep)
+	movl	%ecx,_lightrightstep
 
 	subl	%ecx,%ebx
 	andl	$0xFFFFF,%ebx
@@ -102,11 +101,11 @@ Lv_loop_mip0:
 	orl		$0xF0000000,%ebx
 	subl	%ecx,%ecx	// high word must be 0 in loop for addressing
 
-	movl	%ebx,C(lightdeltastep)
+	movl	%ebx,_lightdeltastep
 	subl	%ebx,%ebx	// high word must be 0 in loop for addressing
 
 Lblockloop8_mip0:
-	movl	%ebp,C(lightdelta)
+	movl	%ebp,_lightdelta
 	movb	14(%esi),%cl
 
 	sarl	$4,%ebp
@@ -227,32 +226,32 @@ LBPatch13:
 
 	movb	0x12345678(%ebx),%ah
 LBPatch14:
-	movl	C(lightright),%edx
+	movl	_lightright,%edx
 
 	movb	0x12345678(%ecx),%al
 LBPatch15:
-	movl	C(lightdelta),%ebp
+	movl	_lightdelta,%ebp
 
 	movl	%eax,(%edi)
 
-	addl	C(sourcetstep),%esi
-	addl	C(surfrowbytes),%edi
+	addl	_sourcetstep,%esi
+	addl	_surfrowbytes,%edi
 
-	addl	C(lightrightstep),%edx
-	addl	C(lightdeltastep),%ebp
+	addl	_lightrightstep,%edx
+	addl	_lightdeltastep,%ebp
 
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 	jc		Lblockloop8_mip0
 
 //			if (pbasesource >= r_sourcemax)
 //				pbasesource -= stepback;
 
-	cmpl	C(r_sourcemax),%esi
+	cmpl	_r_sourcemax,%esi
 	jb		LSkip_mip0
-	subl	C(r_stepback),%esi
+	subl	_r_stepback,%esi
 LSkip_mip0:
 
-	movl	C(r_lightptr),%ebx
+	movl	_r_lightptr,%ebx
 	decl	sb_v
 
 	jnz		Lv_loop_mip0
@@ -269,8 +268,8 @@ LSkip_mip0:
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(R_DrawSurfaceBlock8_mip1)
-C(R_DrawSurfaceBlock8_mip1):
+.globl _R_DrawSurfaceBlock8_mip1
+_R_DrawSurfaceBlock8_mip1:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -278,13 +277,13 @@ C(R_DrawSurfaceBlock8_mip1):
 
 //		for (v=0 ; v<numvblocks ; v++)
 //		{
-	movl	C(r_lightptr),%ebx
-	movl	C(r_numvblocks),%eax
+	movl	_r_lightptr,%ebx
+	movl	_r_numvblocks,%eax
 
 	movl	%eax,sb_v
-	movl	C(prowdestbase),%edi
+	movl	_prowdestbase,%edi
 
-	movl	C(pbasesource),%esi
+	movl	_pbasesource,%esi
 
 Lv_loop_mip1:
 
@@ -295,16 +294,16 @@ Lv_loop_mip1:
 	movl	4(%ebx),%edx		// lightright
 
 	movl	%eax,%ebp
-	movl	C(r_lightwidth),%ecx
+	movl	_r_lightwidth,%ecx
 
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 	subl	%edx,%ebp
 
 	andl	$0xFFFFF,%ebp
 	leal	(%ebx,%ecx,4),%ebx
 
 //			lightptr += lightwidth;
-	movl	%ebx,C(r_lightptr)
+	movl	%ebx,_r_lightptr
 
 //			lightleftstep = (lightptr[0] - lightleft) >> blockdivshift;
 //			lightrightstep = (lightptr[1] - lightright) >> blockdivshift;
@@ -320,7 +319,7 @@ Lv_loop_mip1:
 	orl		$0x70000000,%ebp
 
 	sarl	$3,%ebx
-	movl	%ecx,C(lightrightstep)
+	movl	%ecx,_lightrightstep
 
 	subl	%ecx,%ebx
 	andl	$0xFFFFF,%ebx
@@ -328,11 +327,11 @@ Lv_loop_mip1:
 	orl		$0xF0000000,%ebx
 	subl	%ecx,%ecx	// high word must be 0 in loop for addressing
 
-	movl	%ebx,C(lightdeltastep)
+	movl	%ebx,_lightdeltastep
 	subl	%ebx,%ebx	// high word must be 0 in loop for addressing
 
 Lblockloop8_mip1:
-	movl	%ebp,C(lightdelta)
+	movl	%ebp,_lightdelta
 	movb	6(%esi),%cl
 
 	sarl	$3,%ebp
@@ -391,38 +390,38 @@ LBPatch27:
 
 	movb	0x12345678(%ebx),%ah
 LBPatch28:
-	movl	C(lightright),%edx
+	movl	_lightright,%edx
 
 	movb	0x12345678(%ecx),%al
 LBPatch29:
-	movl	C(lightdelta),%ebp
+	movl	_lightdelta,%ebp
 
 	movl	%eax,(%edi)
-	movl	C(sourcetstep),%eax
+	movl	_sourcetstep,%eax
 
 	addl	%eax,%esi
-	movl	C(surfrowbytes),%eax
+	movl	_surfrowbytes,%eax
 
 	addl	%eax,%edi
-	movl	C(lightrightstep),%eax
+	movl	_lightrightstep,%eax
 
 	addl	%eax,%edx
-	movl	C(lightdeltastep),%eax
+	movl	_lightdeltastep,%eax
 
 	addl	%eax,%ebp
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 
 	jc		Lblockloop8_mip1
 
 //			if (pbasesource >= r_sourcemax)
 //				pbasesource -= stepback;
 
-	cmpl	C(r_sourcemax),%esi
+	cmpl	_r_sourcemax,%esi
 	jb		LSkip_mip1
-	subl	C(r_stepback),%esi
+	subl	_r_stepback,%esi
 LSkip_mip1:
 
-	movl	C(r_lightptr),%ebx
+	movl	_r_lightptr,%ebx
 	decl	sb_v
 
 	jnz		Lv_loop_mip1
@@ -439,8 +438,8 @@ LSkip_mip1:
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(R_DrawSurfaceBlock8_mip2)
-C(R_DrawSurfaceBlock8_mip2):
+.globl _R_DrawSurfaceBlock8_mip2
+_R_DrawSurfaceBlock8_mip2:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -448,13 +447,13 @@ C(R_DrawSurfaceBlock8_mip2):
 
 //		for (v=0 ; v<numvblocks ; v++)
 //		{
-	movl	C(r_lightptr),%ebx
-	movl	C(r_numvblocks),%eax
+	movl	_r_lightptr,%ebx
+	movl	_r_numvblocks,%eax
 
 	movl	%eax,sb_v
-	movl	C(prowdestbase),%edi
+	movl	_prowdestbase,%edi
 
-	movl	C(pbasesource),%esi
+	movl	_pbasesource,%esi
 
 Lv_loop_mip2:
 
@@ -465,16 +464,16 @@ Lv_loop_mip2:
 	movl	4(%ebx),%edx		// lightright
 
 	movl	%eax,%ebp
-	movl	C(r_lightwidth),%ecx
+	movl	_r_lightwidth,%ecx
 
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 	subl	%edx,%ebp
 
 	andl	$0xFFFFF,%ebp
 	leal	(%ebx,%ecx,4),%ebx
 
 //			lightptr += lightwidth;
-	movl	%ebx,C(r_lightptr)
+	movl	%ebx,_r_lightptr
 
 //			lightleftstep = (lightptr[0] - lightleft) >> blockdivshift;
 //			lightrightstep = (lightptr[1] - lightright) >> blockdivshift;
@@ -490,7 +489,7 @@ Lv_loop_mip2:
 	orl		$0x30000000,%ebp
 
 	sarl	$2,%ebx
-	movl	%ecx,C(lightrightstep)
+	movl	%ecx,_lightrightstep
 
 	subl	%ecx,%ebx
 
@@ -499,11 +498,11 @@ Lv_loop_mip2:
 	orl		$0xF0000000,%ebx
 	subl	%ecx,%ecx	// high word must be 0 in loop for addressing
 
-	movl	%ebx,C(lightdeltastep)
+	movl	%ebx,_lightdeltastep
 	subl	%ebx,%ebx	// high word must be 0 in loop for addressing
 
 Lblockloop8_mip2:
-	movl	%ebp,C(lightdelta)
+	movl	%ebp,_lightdelta
 	movb	2(%esi),%cl
 
 	sarl	$2,%ebp
@@ -531,38 +530,38 @@ LBPatch19:
 
 	movb	0x12345678(%ebx),%ah
 LBPatch20:
-	movl	C(lightright),%edx
+	movl	_lightright,%edx
 
 	movb	0x12345678(%ecx),%al
 LBPatch21:
-	movl	C(lightdelta),%ebp
+	movl	_lightdelta,%ebp
 
 	movl	%eax,(%edi)
-	movl	C(sourcetstep),%eax
+	movl	_sourcetstep,%eax
 
 	addl	%eax,%esi
-	movl	C(surfrowbytes),%eax
+	movl	_surfrowbytes,%eax
 
 	addl	%eax,%edi
-	movl	C(lightrightstep),%eax
+	movl	_lightrightstep,%eax
 
 	addl	%eax,%edx
-	movl	C(lightdeltastep),%eax
+	movl	_lightdeltastep,%eax
 
 	addl	%eax,%ebp
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 
 	jc		Lblockloop8_mip2
 
 //			if (pbasesource >= r_sourcemax)
 //				pbasesource -= stepback;
 
-	cmpl	C(r_sourcemax),%esi
+	cmpl	_r_sourcemax,%esi
 	jb		LSkip_mip2
-	subl	C(r_stepback),%esi
+	subl	_r_stepback,%esi
 LSkip_mip2:
 
-	movl	C(r_lightptr),%ebx
+	movl	_r_lightptr,%ebx
 	decl	sb_v
 
 	jnz		Lv_loop_mip2
@@ -579,8 +578,8 @@ LSkip_mip2:
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(R_DrawSurfaceBlock8_mip3)
-C(R_DrawSurfaceBlock8_mip3):
+.globl _R_DrawSurfaceBlock8_mip3
+_R_DrawSurfaceBlock8_mip3:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -588,13 +587,13 @@ C(R_DrawSurfaceBlock8_mip3):
 
 //		for (v=0 ; v<numvblocks ; v++)
 //		{
-	movl	C(r_lightptr),%ebx
-	movl	C(r_numvblocks),%eax
+	movl	_r_lightptr,%ebx
+	movl	_r_numvblocks,%eax
 
 	movl	%eax,sb_v
-	movl	C(prowdestbase),%edi
+	movl	_prowdestbase,%edi
 
-	movl	C(pbasesource),%esi
+	movl	_pbasesource,%esi
 
 Lv_loop_mip3:
 
@@ -605,17 +604,17 @@ Lv_loop_mip3:
 	movl	4(%ebx),%edx		// lightright
 
 	movl	%eax,%ebp
-	movl	C(r_lightwidth),%ecx
+	movl	_r_lightwidth,%ecx
 
-	movl	%edx,C(lightright)
+	movl	%edx,_lightright
 	subl	%edx,%ebp
 
 	andl	$0xFFFFF,%ebp
 	leal	(%ebx,%ecx,4),%ebx
 
-	movl	%ebp,C(lightdelta)
+	movl	%ebp,_lightdelta
 //			lightptr += lightwidth;
-	movl	%ebx,C(r_lightptr)
+	movl	%ebx,_r_lightptr
 
 //			lightleftstep = (lightptr[0] - lightleft) >> blockdivshift;
 //			lightrightstep = (lightptr[1] - lightright) >> blockdivshift;
@@ -630,7 +629,7 @@ Lv_loop_mip3:
 	sarl	$1,%ecx
 
 	sarl	$1,%ebx
-	movl	%ecx,C(lightrightstep)
+	movl	%ecx,_lightrightstep
 
 	subl	%ecx,%ebx
 	andl	$0xFFFFF,%ebx
@@ -638,7 +637,7 @@ Lv_loop_mip3:
 	sarl	$1,%ebp
 	orl		$0xF0000000,%ebx
 
-	movl	%ebx,C(lightdeltastep)
+	movl	%ebx,_lightdeltastep
 	subl	%ebx,%ebx	// high word must be 0 in loop for addressing
 
 	movb	1(%esi),%bl
@@ -652,26 +651,26 @@ Lv_loop_mip3:
 
 	movb	0x12345678(%ebx),%al
 LBPatch16:
-	movl	C(lightright),%edx
+	movl	_lightright,%edx
 
 	movb	%al,1(%edi)
 	movb	0x12345678(%ecx),%al
 LBPatch17:
 
 	movb	%al,(%edi)
-	movl	C(sourcetstep),%eax
+	movl	_sourcetstep,%eax
 
 	addl	%eax,%esi
-	movl	C(surfrowbytes),%eax
+	movl	_surfrowbytes,%eax
 
 	addl	%eax,%edi
-	movl	C(lightdeltastep),%eax
+	movl	_lightdeltastep,%eax
 
-	movl	C(lightdelta),%ebp
+	movl	_lightdelta,%ebp
 	movb	(%esi),%cl
 
 	addl	%eax,%ebp
-	movl	C(lightrightstep),%eax
+	movl	_lightrightstep,%eax
 
 	sarl	$1,%ebp
 	addl	%eax,%edx
@@ -684,14 +683,14 @@ LBPatch17:
 
 	movb	0x12345678(%ebx),%al
 LBPatch30:
-	movl	C(sourcetstep),%edx
+	movl	_sourcetstep,%edx
 
 	movb	%al,1(%edi)
 	movb	0x12345678(%ecx),%al
 LBPatch31:
 
 	movb	%al,(%edi)
-	movl	C(surfrowbytes),%ebp
+	movl	_surfrowbytes,%ebp
 
 	addl	%edx,%esi
 	addl	%ebp,%edi
@@ -699,12 +698,12 @@ LBPatch31:
 //			if (pbasesource >= r_sourcemax)
 //				pbasesource -= stepback;
 
-	cmpl	C(r_sourcemax),%esi
+	cmpl	_r_sourcemax,%esi
 	jb		LSkip_mip3
-	subl	C(r_stepback),%esi
+	subl	_r_stepback,%esi
 LSkip_mip3:
 
-	movl	C(r_lightptr),%ebx
+	movl	_r_lightptr,%ebx
 	decl	sb_v
 
 	jnz		Lv_loop_mip3
@@ -716,8 +715,8 @@ LSkip_mip3:
 	ret
 
 
-.globl C(R_Surf8End)
-C(R_Surf8End):
+.globl _R_Surf8End
+_R_Surf8End:
 
 //----------------------------------------------------------------------
 // Code patching routines
@@ -762,11 +761,11 @@ LPatchTable8:
 	.text
 
 	.align 4
-.globl C(R_Surf8Patch)
-C(R_Surf8Patch):
+.globl _R_Surf8Patch
+_R_Surf8Patch:
 	pushl	%ebx
 
-	movl	C(colormap),%eax
+	movl	_colormap,%eax
 	movl	$LPatchTable8,%ebx
 	movl	$32,%ecx
 LPatchLoop8:

@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // out-of-line, rarely-needed clamping code
 
 LClampHigh0:
-	movl	C(bbextents),%esi
+	movl	_bbextents,%esi
 	jmp		LClampReentry0
 LClampHighOrLow0:
 	jg		LClampHigh0
@@ -45,7 +44,7 @@ LClampHighOrLow0:
 	jmp		LClampReentry0
 
 LClampHigh1:
-	movl	C(bbextentt),%edx
+	movl	_bbextentt,%edx
 	jmp		LClampReentry1
 LClampHighOrLow1:
 	jg		LClampHigh1
@@ -56,36 +55,36 @@ LClampLow2:
 	movl	$2048,%ebp
 	jmp		LClampReentry2
 LClampHigh2:
-	movl	C(bbextents),%ebp
+	movl	_bbextents,%ebp
 	jmp		LClampReentry2
 
 LClampLow3:
 	movl	$2048,%ecx
 	jmp		LClampReentry3
 LClampHigh3:
-	movl	C(bbextentt),%ecx
+	movl	_bbextentt,%ecx
 	jmp		LClampReentry3
 
 LClampLow4:
 	movl	$2048,%eax
 	jmp		LClampReentry4
 LClampHigh4:
-	movl	C(bbextents),%eax
+	movl	_bbextents,%eax
 	jmp		LClampReentry4
 
 LClampLow5:
 	movl	$2048,%ebx
 	jmp		LClampReentry5
 LClampHigh5:
-	movl	C(bbextentt),%ebx
+	movl	_bbextentt,%ebx
 	jmp		LClampReentry5
 
 
 #define pspans	4+16
 
 	.align 4
-.globl C(D_SpriteDrawSpans)
-C(D_SpriteDrawSpans):
+.globl _D_SpriteDrawSpans
+_D_SpriteDrawSpans:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
@@ -96,16 +95,16 @@ C(D_SpriteDrawSpans):
 // and span list pointers, and 1/z step in 0.32 fixed-point
 //
 // FIXME: any overlap from rearranging?
-	flds	C(d_sdivzstepu)
+	flds	_d_sdivzstepu
 	fmuls	fp_8
-	movl	C(cacheblock),%edx
-	flds	C(d_tdivzstepu)
+	movl	_cacheblock,%edx
+	flds	_d_tdivzstepu
 	fmuls	fp_8
 	movl	pspans(%esp),%ebx	// point to the first span descriptor
-	flds	C(d_zistepu)
+	flds	_d_zistepu
 	fmuls	fp_8
 	movl	%edx,pbase			// pbase = cacheblock
-	flds	C(d_zistepu)
+	flds	_d_zistepu
 	fmuls	fp_64kx64k
 	fxch	%st(3)
 	fstps	sdivz8stepu
@@ -131,11 +130,11 @@ LSpanLoop:
 	fildl	sspan_t_u(%ebx)
 
 	fld		%st(1)			// dv | du | dv
-	fmuls	C(d_sdivzstepv)	// dv*d_sdivzstepv | du | dv
+	fmuls	_d_sdivzstepv	// dv*d_sdivzstepv | du | dv
 	fld		%st(1)			// du | dv*d_sdivzstepv | du | dv
-	fmuls	C(d_sdivzstepu)	// du*d_sdivzstepu | dv*d_sdivzstepv | du | dv
+	fmuls	_d_sdivzstepu	// du*d_sdivzstepu | dv*d_sdivzstepv | du | dv
 	fld		%st(2)			// du | du*d_sdivzstepu | dv*d_sdivzstepv | du | dv
-	fmuls	C(d_tdivzstepu)	// du*d_tdivzstepu | du*d_sdivzstepu |
+	fmuls	_d_tdivzstepu	// du*d_tdivzstepu | du*d_sdivzstepu |
 							//  dv*d_sdivzstepv | du | dv
 	fxch	%st(1)			// du*d_sdivzstepu | du*d_tdivzstepu |
 							//  dv*d_sdivzstepv | du | dv
@@ -145,16 +144,16 @@ LSpanLoop:
 							//  du*d_tdivzstepu | du | dv
 	fld		%st(3)			// dv | du*d_sdivzstepu + dv*d_sdivzstepv |
 							//  du*d_tdivzstepu | du | dv
-	fmuls	C(d_tdivzstepv)	// dv*d_tdivzstepv |
+	fmuls	_d_tdivzstepv	// dv*d_tdivzstepv |
 							//  du*d_sdivzstepu + dv*d_sdivzstepv |
 							//  du*d_tdivzstepu | du | dv
 	fxch	%st(1)			// du*d_sdivzstepu + dv*d_sdivzstepv |
 							//  dv*d_tdivzstepv | du*d_tdivzstepu | du | dv
-	fadds	C(d_sdivzorigin) // sdivz = d_sdivzorigin + dv*d_sdivzstepv +
+	fadds	_d_sdivzorigin // sdivz = d_sdivzorigin + dv*d_sdivzstepv +
 							//  du*d_sdivzstepu; stays in %st(2) at end
 	fxch	%st(4)			// dv | dv*d_tdivzstepv | du*d_tdivzstepu | du |
 							//  s/z
-	fmuls	C(d_zistepv)		// dv*d_zistepv | dv*d_tdivzstepv |
+	fmuls	_d_zistepv		// dv*d_zistepv | dv*d_tdivzstepv |
 							//  du*d_tdivzstepu | du | s/z
 	fxch	%st(1)			// dv*d_tdivzstepv |  dv*d_zistepv |
 							//  du*d_tdivzstepu | du | s/z
@@ -162,19 +161,19 @@ LSpanLoop:
 							//  dv*d_tdivzstepv + du*d_tdivzstepu | du | s/z
 	fxch	%st(2)			// du | dv*d_tdivzstepv + du*d_tdivzstepu |
 							//  dv*d_zistepv | s/z
-	fmuls	C(d_zistepu)		// du*d_zistepu |
+	fmuls	_d_zistepu		// du*d_zistepu |
 							//  dv*d_tdivzstepv + du*d_tdivzstepu |
 							//  dv*d_zistepv | s/z
 	fxch	%st(1)			// dv*d_tdivzstepv + du*d_tdivzstepu |
 							//  du*d_zistepu | dv*d_zistepv | s/z
-	fadds	C(d_tdivzorigin)	// tdivz = d_tdivzorigin + dv*d_tdivzstepv +
+	fadds	_d_tdivzorigin	// tdivz = d_tdivzorigin + dv*d_tdivzstepv +
 							//  du*d_tdivzstepu; stays in %st(1) at end
 	fxch	%st(2)			// dv*d_zistepv | du*d_zistepu | t/z | s/z
 	faddp	%st(0),%st(1)	// dv*d_zistepv + du*d_zistepu | t/z | s/z
 
 	flds	fp_64k			// fp_64k | dv*d_zistepv + du*d_zistepu | t/z | s/z
 	fxch	%st(1)			// dv*d_zistepv + du*d_zistepu | fp_64k | t/z | s/z
-	fadds	C(d_ziorigin)		// zi = d_ziorigin + dv*d_zistepv +
+	fadds	_d_ziorigin		// zi = d_ziorigin + dv*d_zistepv +
 							//  du*d_zistepu; stays in %st(0) at end
 							// 1/z | fp_64k | t/z | s/z
 
@@ -198,21 +197,21 @@ LSpanLoop:
 	movl	sspan_t_v(%ebx),%eax
 	movl	%ebp,izi
 	movl	sspan_t_u(%ebx),%ebp
-	imull	C(d_zrowbytes)
+	imull	_d_zrowbytes
 	shll	$1,%ebp					// a word per pixel
-	addl	C(d_pzbuffer),%eax
+	addl	_d_pzbuffer,%eax
 	addl	%ebp,%eax
 	movl	%eax,pz
 
 //
 // point %edi to the first pixel in the span
 //
-	movl	C(d_viewbuffer),%ebp
+	movl	_d_viewbuffer,%ebp
 	movl	sspan_t_v(%ebx),%eax
 	pushl	%ebx		// preserve spans pointer
-	movl	C(tadjust),%edx
-	movl	C(sadjust),%esi
-	movl	C(d_scantable)(,%eax,4),%edi	// v * screenwidth
+	movl	_tadjust,%edx
+	movl	_sadjust,%esi
+	movl	_d_scantable)(,%eax,4,%edi	// v * screenwidth
 	addl	%ebp,%edi
 	movl	sspan_t_u(%ebx),%ebp
 	addl	%ebp,%edi				// pdest = &pdestspan[scans->u];
@@ -240,13 +239,13 @@ LSpanLoop:
 
 	fildl	spancountminus1
 
-	flds	C(d_tdivzstepu)	// _d_tdivzstepu | spancountminus1
-	flds	C(d_zistepu)	// _d_zistepu | _d_tdivzstepu | spancountminus1
+	flds	_d_tdivzstepu	// _d_tdivzstepu | spancountminus1
+	flds	_d_zistepu	// _d_zistepu | _d_tdivzstepu | spancountminus1
 	fmul	%st(2),%st(0)	// _d_zistepu*scm1 | _d_tdivzstepu | scm1
 	fxch	%st(1)			// _d_tdivzstepu | _d_zistepu*scm1 | scm1
 	fmul	%st(2),%st(0)	// _d_tdivzstepu*scm1 | _d_zistepu*scm1 | scm1
 	fxch	%st(2)			// scm1 | _d_zistepu*scm1 | _d_tdivzstepu*scm1
-	fmuls	C(d_sdivzstepu)	// _d_sdivzstepu*scm1 | _d_zistepu*scm1 |
+	fmuls	_d_sdivzstepu	// _d_sdivzstepu*scm1 | _d_zistepu*scm1 |
 							//  _d_tdivzstepu*scm1
 	fxch	%st(1)			// _d_zistepu*scm1 | _d_sdivzstepu*scm1 |
 							//  _d_tdivzstepu*scm1
@@ -300,8 +299,8 @@ LFDIVInFlight1:
 
 	addl	s,%esi
 	addl	t,%edx
-	movl	C(bbextents),%ebx
-	movl	C(bbextentt),%ebp
+	movl	_bbextents,%ebx
+	movl	_bbextentt,%ebp
 	cmpl	%ebx,%esi
 	ja		LClampHighOrLow0
 LClampReentry0:
@@ -324,7 +323,7 @@ LClampReentry1:
 //
 	sarl	$16,%eax
 	addl	%ebx,%esi
-	imull	C(cachewidth),%eax		// (tfrac >> 16) * cachewidth
+	imull	_cachewidth),%eax		// (tfrac >> 16 * cachewidth
 	addl	%eax,%esi				// psource = pbase + (sfrac >> 16) +
 									//           ((tfrac >> 16) * cachewidth);
 
@@ -357,15 +356,15 @@ LNotLastSegment:
 	movl	tnext,%edx
 
 	subl	$8,%ecx		// count off this segments' pixels
-	movl	C(sadjust),%ebp
+	movl	_sadjust,%ebp
 	pushl	%ecx		// remember count of remaining pixels
-	movl	C(tadjust),%ecx
+	movl	_tadjust,%ecx
 
 	addl	%eax,%ebp
 	addl	%edx,%ecx
 
-	movl	C(bbextents),%eax
-	movl	C(bbextentt),%edx
+	movl	_bbextents,%eax
+	movl	_bbextentt,%edx
 
 	cmpl	$2048,%ebp
 	jl		LClampLow2
@@ -391,7 +390,7 @@ LClampReentry3:
 	movl	%ecx,%eax
 	movl	%ebp,%edx
 	sarl	$19,%edx			// sstep >>= 16;
-	movl	C(cachewidth),%ebx
+	movl	_cachewidth,%ebx
 	sarl	$19,%eax			// tstep >>= 16;
 	jz		LIsZero
 	imull	%ebx,%eax			// (tstep >> 16) * cachewidth;
@@ -500,14 +499,14 @@ Lp5:
 	movl	%eax,spancountminus1
 	fildl	spancountminus1
 
-	flds	C(d_zistepu)		// _d_zistepu | spancountminus1
+	flds	_d_zistepu		// _d_zistepu | spancountminus1
 	fmul	%st(1),%st(0)	// _d_zistepu*scm1 | scm1
-	flds	C(d_tdivzstepu)	// _d_tdivzstepu | _d_zistepu*scm1 | scm1
+	flds	_d_tdivzstepu	// _d_tdivzstepu | _d_zistepu*scm1 | scm1
 	fmul	%st(2),%st(0)	// _d_tdivzstepu*scm1 | _d_zistepu*scm1 | scm1
 	fxch	%st(1)			// _d_zistepu*scm1 | _d_tdivzstepu*scm1 | scm1
 	faddp	%st(0),%st(3)	// _d_tdivzstepu*scm1 | scm1
 	fxch	%st(1)			// scm1 | _d_tdivzstepu*scm1
-	fmuls	C(d_sdivzstepu)	// _d_sdivzstepu*scm1 | _d_tdivzstepu*scm1
+	fmuls	_d_sdivzstepu	// _d_sdivzstepu*scm1 | _d_tdivzstepu*scm1
 	fxch	%st(1)			// _d_tdivzstepu*scm1 | _d_sdivzstepu*scm1
 	faddp	%st(0),%st(3)	// _d_sdivzstepu*scm1
 	flds	fp_64k			// 64k | _d_sdivzstepu*scm1
@@ -622,14 +621,14 @@ LLastSegment:
 	fistpl	snext
 	fistpl	tnext
 
-	movl	C(tadjust),%ebx
-	movl	C(sadjust),%eax
+	movl	_tadjust,%ebx
+	movl	_sadjust,%eax
 
 	addl	snext,%eax
 	addl	tnext,%ebx
 
-	movl	C(bbextents),%ebp
-	movl	C(bbextentt),%edx
+	movl	_bbextents,%ebp
+	movl	_bbextentt,%edx
 
 	cmpl	$2048,%eax
 	jl		LClampLow4
@@ -667,7 +666,7 @@ LSetEntryvec:
 	pushl	%ebx				// entry point into code for RET later
 	movl	%ebp,%ecx
 	sarl	$16,%ecx			// sstep >>= 16;
-	movl	C(cachewidth),%ebx
+	movl	_cachewidth,%ebx
 	sarl	$16,%edx			// tstep >>= 16;
 	jz		LIsZeroLast
 	imull	%ebx,%edx			// (tstep >> 16) * cachewidth;

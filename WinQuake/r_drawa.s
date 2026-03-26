@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -56,8 +55,8 @@ Lzi0:			.long		0
 #define clip	12+12
 
 	.align 4
-.globl C(R_ClipEdge)
-C(R_ClipEdge):
+.globl _R_ClipEdge
+_R_ClipEdge:
 	pushl	%esi				// preserve register variables
 	pushl	%edi
 	pushl	%ebx
@@ -155,19 +154,19 @@ Lemit:
 
 //	if (r_lastvertvalid)
 //	{
-	cmpl	$0,C(r_lastvertvalid)
+	cmpl	$0,_r_lastvertvalid
 	jz		LCalcFirst
 
 //		u0 = r_u1;
 //		v0 = r_v1;
 //		lzi0 = r_lzi1;
 //		ceilv0 = r_ceilv1;
-	movl	C(r_lzi1),%eax
-	movl	C(r_u1),%ecx
+	movl	_r_lzi1,%eax
+	movl	_r_u1,%ecx
 	movl	%eax,Lzi0
 	movl	%ecx,Lu0
-	movl	C(r_v1),%ecx
-	movl	C(r_ceilv1),%eax
+	movl	_r_v1,%ecx
+	movl	_r_ceilv1,%eax
 	movl	%ecx,Lv0
 	movl	%eax,Lceilv0
 	jmp		LCalcSecond
@@ -207,11 +206,11 @@ LCalcSecond:
 	fxch	%st(3)					// v1 | lzi1 | u1 | v0 | lzi0 | u0
 
 //	r_ceilv1 = (int)(r_v1 - 2000) + 2000; // ceil(r_v1);
-	fistl	C(r_ceilv1)
+	fistl	_r_ceilv1
 
 	fldcw	single_cw				// put back normal floating-point state
 
-	fsts	C(r_v1)
+	fsts	_r_v1
 	fxch	%st(4)					// lzi0 | lzi1 | u1 | v0 | v1 | u0
 
 //	if (r_lzi1 > lzi0)
@@ -225,34 +224,34 @@ LCalcSecond:
 LP0:
 
 	fxch	%st(1)					// lzi1 | lzi0 | u1 | v0 | v1 | u0
-	fstps	C(r_lzi1)				// lzi0 | u1 | v0 | v1 | u0
+	fstps	_r_lzi1				// lzi0 | u1 | v0 | v1 | u0
 	fxch	%st(1)
-	fsts	C(r_u1)
+	fsts	_r_u1
 	fxch	%st(1)
 
 //	if (lzi0 > r_nearzi)	// for mipmap finding
 //		r_nearzi = lzi0;
-	fcoms	C(r_nearzi)
+	fcoms	_r_nearzi
 	fnstsw	%ax
 	testb	$0x45,%ah
 	jnz		LP1
-	fsts	C(r_nearzi)
+	fsts	_r_nearzi
 LP1:
 
 // // for right edges, all we want is the effect on 1/z
 //	if (r_nearzionly)
 //		return;
-	movl	C(r_nearzionly),%eax
+	movl	_r_nearzionly,%eax
 	testl	%eax,%eax
 	jz		LP2
 LPop5AndDone:
-	movl	C(cacheoffset),%eax
-	movl	C(r_framecount),%edx
+	movl	_cacheoffset,%eax
+	movl	_r_framecount,%edx
 	cmpl	$0x7FFFFFFF,%eax
 	jz		LDoPop
 	andl	$(FRAMECOUNT_MASK),%edx
 	orl		$(FULLY_CLIPPED_CACHED),%edx
-	movl	%edx,C(cacheoffset)
+	movl	%edx,_cacheoffset
 
 LDoPop:
 	fstp	%st(0)			// u1 | v0 | v1 | u0
@@ -268,15 +267,15 @@ LP2:
 //	if (ceilv0 == r_ceilv1)
 //		return;		// horizontal edge
 	movl	Lceilv0,%ebx
-	movl	C(edge_p),%edi
-	movl	C(r_ceilv1),%ecx
+	movl	_edge_p,%edi
+	movl	_r_ceilv1,%ecx
 	movl	%edi,%edx
-	movl	C(r_pedge),%esi
+	movl	_r_pedge,%esi
 	addl	$(et_size),%edx
 	cmpl	%ecx,%ebx
 	jz		LPop5AndDone
 
-	movl	C(r_pedge),%eax
+	movl	_r_pedge,%eax
 	movl	%eax,et_owner(%edi)
 
 //	side = ceilv0 > r_ceilv1;
@@ -298,10 +297,10 @@ LSide1:
 	fdivrp	%st(0),%st(2)		// v1 | ustep
 
 //	r_emitted = 1;
-	movl	$1,C(r_emitted)
+	movl	$1,_r_emitted
 
 //	edge = edge_p++;
-	movl	%edx,C(edge_p)
+	movl	%edx,_edge_p
 
 // pretouch next edge
 	movl	(%edx),%eax
@@ -314,8 +313,8 @@ LSide1:
 
 //		edge->surfs[0] = 0;
 //		edge->surfs[1] = surface_p - surfaces;
-	movl	C(surface_p),%eax
-	movl	C(surfaces),%esi
+	movl	_surface_p,%eax
+	movl	_surfaces,%esi
 	subl	%edx,%edx
 	subl	%esi,%eax
 	shrl	$(SURF_T_SHIFT),%eax
@@ -329,7 +328,7 @@ LSide1:
 	fildl	Lv					// v | v1 | ustep
 	fsubp	%st(0),%st(1)		// v-v1 | ustep
 	fmul	%st(1),%st(0)		// (v-v1)*ustep | ustep
-	fadds	C(r_u1)				// u | ustep
+	fadds	_r_u1				// u | ustep
 
 	jmp		LSideDone
 
@@ -348,10 +347,10 @@ LSide0:
 	fdivrp	%st(0),%st(2)		// v0 | ustep | u0
 
 //	r_emitted = 1;
-	movl	$1,C(r_emitted)
+	movl	$1,_r_emitted
 
 //	edge = edge_p++;
-	movl	%edx,C(edge_p)
+	movl	%edx,_edge_p
 
 // pretouch next edge
 	movl	(%edx),%eax
@@ -362,8 +361,8 @@ LSide0:
 
 //		edge->surfs[0] = surface_p - surfaces;
 //		edge->surfs[1] = 0;
-	movl	C(surface_p),%eax
-	movl	C(surfaces),%esi
+	movl	_surface_p,%eax
+	movl	_surfaces,%esi
 	subl	%edx,%edx
 	subl	%esi,%eax
 	shrl	$(SURF_T_SHIFT),%eax
@@ -406,10 +405,10 @@ LSideDone:
 //	if (edge->u > r_refdef.vrectright_adj_shift20)
 //		edge->u = r_refdef.vrectright_adj_shift20;
 	movl	et_u(%edi),%eax
-	movl	C(r_refdef)+rd_vrect_x_adj_shift20,%edx
+	movl	_r_refdef+rd_vrect_x_adj_shift20,%edx
 	cmpl	%edx,%eax
 	jl		LP4
-	movl	C(r_refdef)+rd_vrectright_adj_shift20,%edx
+	movl	_r_refdef+rd_vrectright_adj_shift20,%edx
 	cmpl	%edx,%eax
 	jng		LP5
 LP4:
@@ -426,7 +425,7 @@ LP5:
 
 //	if (!newedges[v] || newedges[v]->u >= u_check)
 //	{
-	movl	C(newedges)(,%ebx,4),%esi
+	movl	_newedges)(,%ebx,4,%esi
 	testl	%esi,%esi
 	jz		LDoFirst
 	cmpl	%eax,et_u(%esi)
@@ -436,7 +435,7 @@ LDoFirst:
 //		edge->next = newedges[v];
 //		newedges[v] = edge;
 	movl	%esi,et_next(%edi)
-	movl	%edi,C(newedges)(,%ebx,4)
+	movl	%edi,_newedges)(,%ebx,4
 
 	jmp		LSetRemove
 
@@ -471,8 +470,8 @@ LSetRemove:
 
 //	edge->nextremove = removeedges[v2];
 //	removeedges[v2] = edge;
-	movl	C(removeedges)(,%ecx,4),%eax
-	movl	%edi,C(removeedges)(,%ecx,4)
+	movl	_removeedges)(,%ecx,4,%eax
+	movl	%edi,_removeedges)(,%ecx,4
 	movl	%eax,et_nextremove(%edi)
 
 Ldone:
@@ -502,16 +501,16 @@ Lp2:
 //				// both points are clipped
 //				// we do cache fully clipped edges
 //					if (!leftclipped)
-	movl	C(r_leftclipped),%eax
-	movl	C(r_pedge),%ecx
+	movl	_r_leftclipped,%eax
+	movl	_r_pedge,%ecx
 	testl	%eax,%eax
 	jnz		Ldone
 
 //						r_pedge->framecount = r_framecount;
-	movl	C(r_framecount),%eax
+	movl	_r_framecount,%eax
 	andl	$(FRAMECOUNT_MASK),%eax
 	orl		$(FULLY_CLIPPED_CACHED),%eax
-	movl	%eax,C(cacheoffset)
+	movl	%eax,_cacheoffset
 
 //					return;
 	jmp		Ldone
@@ -534,7 +533,7 @@ Lp1:
 	fsubr	%st(1),%st(0)
 
 //			// we don't cache partially clipped edges
-	movl	$0x7FFFFFFF,C(cacheoffset)
+	movl	$0x7FFFFFFF,_cacheoffset
 
 	fdivrp	%st(0),%st(1)
 
@@ -579,13 +578,13 @@ Lp1:
 
 //					r_leftclipped = true;
 //					r_leftexit = clipvert;
-	movl	$1,C(r_leftclipped)
+	movl	$1,_r_leftclipped
 	movl	mv_position+0(%esp),%eax
-	movl	%eax,C(r_leftexit)+mv_position+0
+	movl	%eax,_r_leftexit+mv_position+0
 	movl	mv_position+4(%esp),%eax
-	movl	%eax,C(r_leftexit)+mv_position+4
+	movl	%eax,_r_leftexit+mv_position+4
 	movl	mv_position+8(%esp),%eax
-	movl	%eax,C(r_leftexit)+mv_position+8
+	movl	%eax,_r_leftexit+mv_position+8
 
 	jmp		Lcontinue
 
@@ -599,13 +598,13 @@ Ltestright:
 
 //					r_rightclipped = true;
 //					r_rightexit = clipvert;
-	movl	$1,C(r_rightclipped)
+	movl	$1,_r_rightclipped
 	movl	mv_position+0(%esp),%eax
-	movl	%eax,C(r_rightexit)+mv_position+0
+	movl	%eax,_r_rightexit+mv_position+0
 	movl	mv_position+4(%esp),%eax
-	movl	%eax,C(r_rightexit)+mv_position+4
+	movl	%eax,_r_rightexit+mv_position+4
 	movl	mv_position+8(%esp),%eax
-	movl	%eax,C(r_rightexit)+mv_position+8
+	movl	%eax,_r_rightexit+mv_position+8
 
 //				}
 //
@@ -621,7 +620,7 @@ Lp3:
 //			// only point 0 is clipped
 //				r_lastvertvalid = false;
 
-	movl	$0,C(r_lastvertvalid)
+	movl	$0,_r_lastvertvalid
 
 //				f = d0 / (d0 - d1);
 	flds	Ld0
@@ -629,7 +628,7 @@ Lp3:
 	fsubr	%st(1),%st(0)
 
 //			// we don't cache partially clipped edges
-	movl	$0x7FFFFFFF,C(cacheoffset)
+	movl	$0x7FFFFFFF,_cacheoffset
 
 	fdivrp	%st(0),%st(1)
 
@@ -675,13 +674,13 @@ Lp3:
 
 //					r_leftclipped = true;
 //					r_leftenter = clipvert;
-	movl	$1,C(r_leftclipped)
+	movl	$1,_r_leftclipped
 	movl	mv_position+0(%esp),%eax
-	movl	%eax,C(r_leftenter)+mv_position+0
+	movl	%eax,_r_leftenter+mv_position+0
 	movl	mv_position+4(%esp),%eax
-	movl	%eax,C(r_leftenter)+mv_position+4
+	movl	%eax,_r_leftenter+mv_position+4
 	movl	mv_position+8(%esp),%eax
-	movl	%eax,C(r_leftenter)+mv_position+8
+	movl	%eax,_r_leftenter+mv_position+8
 
 	jmp		Lcontinue
 
@@ -695,13 +694,13 @@ Ltestright2:
 
 //					r_rightclipped = true;
 //					r_rightenter = clipvert;
-	movl	$1,C(r_rightclipped)
+	movl	$1,_r_rightclipped
 	movl	mv_position+0(%esp),%eax
-	movl	%eax,C(r_rightenter)+mv_position+0
+	movl	%eax,_r_rightenter+mv_position+0
 	movl	mv_position+4(%esp),%eax
-	movl	%eax,C(r_rightenter)+mv_position+4
+	movl	%eax,_r_rightenter+mv_position+4
 	movl	mv_position+8(%esp),%eax
-	movl	%eax,C(r_rightenter)+mv_position+8
+	movl	%eax,_r_rightenter+mv_position+8
 
 //				}
 	jmp		Lcontinue
@@ -713,11 +712,11 @@ LTransformAndProject:
 //	// transform and project
 //		VectorSubtract (world, modelorg, local);
 	flds	mv_position+0(%esi)
-	fsubs	C(modelorg)+0
+	fsubs	_modelorg+0
 	flds	mv_position+4(%esi)
-	fsubs	C(modelorg)+4
+	fsubs	_modelorg+4
 	flds	mv_position+8(%esi)	
-	fsubs	C(modelorg)+8
+	fsubs	_modelorg+8
 	fxch	%st(2)				// local[0] | local[1] | local[2]
 
 //		TransformVector (local, transformed);
@@ -727,23 +726,23 @@ LTransformAndProject:
 //	
 //		lzi0 = 1.0 / transformed[2];
 	fld		%st(0)				// local[0] | local[0] | local[1] | local[2]
-	fmuls	C(vpn)+0			// zm0 | local[0] | local[1] | local[2]
+	fmuls	_vpn+0			// zm0 | local[0] | local[1] | local[2]
 	fld		%st(1)				// local[0] | zm0 | local[0] | local[1] |
 								//  local[2]
-	fmuls	C(vright)+0			// xm0 | zm0 | local[0] | local[1] | local[2]
+	fmuls	_vright+0			// xm0 | zm0 | local[0] | local[1] | local[2]
 	fxch	%st(2)				// local[0] | zm0 | xm0 | local[1] | local[2]
-	fmuls	C(vup)+0			// ym0 |  zm0 | xm0 | local[1] | local[2]
+	fmuls	_vup+0			// ym0 |  zm0 | xm0 | local[1] | local[2]
 	fld		%st(3)				// local[1] | ym0 |  zm0 | xm0 | local[1] |
 								//  local[2]
-	fmuls	C(vpn)+4			// zm1 | ym0 | zm0 | xm0 | local[1] |
+	fmuls	_vpn+4			// zm1 | ym0 | zm0 | xm0 | local[1] |
 								//  local[2]
 	fld		%st(4)				// local[1] | zm1 | ym0 | zm0 | xm0 |
 								//  local[1] | local[2]
-	fmuls	C(vright)+4			// xm1 | zm1 | ym0 |  zm0 | xm0 |
+	fmuls	_vright+4			// xm1 | zm1 | ym0 |  zm0 | xm0 |
 								//  local[1] | local[2]
 	fxch	%st(5)				// local[1] | zm1 | ym0 | zm0 | xm0 |
 								//  xm1 | local[2]
-	fmuls	C(vup)+4			// ym1 | zm1 | ym0 | zm0 | xm0 |
+	fmuls	_vup+4			// ym1 | zm1 | ym0 | zm0 | xm0 |
 								//  xm1 | local[2]
 	fxch	%st(1)				// zm1 | ym1 | ym0 | zm0 | xm0 |
 								//  xm1 | local[2]
@@ -752,11 +751,11 @@ LTransformAndProject:
 	faddp	%st(0),%st(4)		// ym0 | zm2 | ym1 | xm2 | local[2]
 	faddp	%st(0),%st(2)		// zm2 | ym2 | xm2 | local[2]
 	fld		%st(3)				// local[2] | zm2 | ym2 | xm2 | local[2]
-	fmuls	C(vpn)+8			// zm3 | zm2 | ym2 | xm2 | local[2]
+	fmuls	_vpn+8			// zm3 | zm2 | ym2 | xm2 | local[2]
 	fld		%st(4)				// local[2] | zm3 | zm2 | ym2 | xm2 | local[2]
-	fmuls	C(vright)+8			// xm3 | zm3 | zm2 | ym2 | xm2 | local[2]
+	fmuls	_vright+8			// xm3 | zm3 | zm2 | ym2 | xm2 | local[2]
 	fxch	%st(5)				// local[2] | zm3 | zm2 | ym2 | xm2 | xm3
-	fmuls	C(vup)+8			// ym3 | zm3 | zm2 | ym2 | xm2 | xm3
+	fmuls	_vup+8			// ym3 | zm3 | zm2 | ym2 | xm2 | xm3
 	fxch	%st(1)				// zm3 | ym3 | zm2 | ym2 | xm2 | xm3
 	faddp	%st(0),%st(2)		// ym3 | zm4 | ym2 | xm2 | xm3
 	fxch	%st(4)				// xm3 | zm4 | ym2 | xm2 | ym3
@@ -779,58 +778,58 @@ LNoClip:
 //	// FIXME: build x/yscale into transform?
 //		scale = xscale * lzi0;
 //		u0 = (xcenter + scale*transformed[0]);
-	flds	C(xscale)			// xscale | x | lzi0 | y
+	flds	_xscale			// xscale | x | lzi0 | y
 	fmul	%st(2),%st(0)		// scale | x | lzi0 | y
 	fmulp	%st(0),%st(1)		// scale*x | lzi0 | y
-	fadds	C(xcenter)			// u0 | lzi0 | y
+	fadds	_xcenter			// u0 | lzi0 | y
 
 //		if (u0 < r_refdef.fvrectx_adj)
 //			u0 = r_refdef.fvrectx_adj;
 //		if (u0 > r_refdef.fvrectright_adj)
 //			u0 = r_refdef.fvrectright_adj;
 // FIXME: use integer compares of floats?
-	fcoms	C(r_refdef)+rd_fvrectx_adj
+	fcoms	_r_refdef+rd_fvrectx_adj
 	fnstsw	%ax
 	testb	$1,%ah
 	jz		LClampP0
 	fstp	%st(0)
-	flds	C(r_refdef)+rd_fvrectx_adj
+	flds	_r_refdef+rd_fvrectx_adj
 LClampP0:
-	fcoms	C(r_refdef)+rd_fvrectright_adj
+	fcoms	_r_refdef+rd_fvrectright_adj
 	fnstsw	%ax
 	testb	$0x45,%ah
 	jnz		LClampP1
 	fstp	%st(0)
-	flds	C(r_refdef)+rd_fvrectright_adj
+	flds	_r_refdef+rd_fvrectright_adj
 LClampP1:
 
 	fld		%st(1)				// lzi0 | u0 | lzi0 | y
 
 //		scale = yscale * lzi0;
 //		v0 = (ycenter - scale*transformed[1]);
-	fmuls	C(yscale)			// scale | u0 | lzi0 | y
+	fmuls	_yscale			// scale | u0 | lzi0 | y
 	fmulp	%st(0),%st(3)		// u0 | lzi0 | scale*y
 	fxch	%st(2)				// scale*y | lzi0 | u0
-	fsubrs	C(ycenter)			// v0 | lzi0 | u0
+	fsubrs	_ycenter			// v0 | lzi0 | u0
 
 //		if (v0 < r_refdef.fvrecty_adj)
 //			v0 = r_refdef.fvrecty_adj;
 //		if (v0 > r_refdef.fvrectbottom_adj)
 //			v0 = r_refdef.fvrectbottom_adj;
 // FIXME: use integer compares of floats?
-	fcoms	C(r_refdef)+rd_fvrecty_adj
+	fcoms	_r_refdef+rd_fvrecty_adj
 	fnstsw	%ax
 	testb	$1,%ah
 	jz		LClampP2
 	fstp	%st(0)
-	flds	C(r_refdef)+rd_fvrecty_adj
+	flds	_r_refdef+rd_fvrecty_adj
 LClampP2:
-	fcoms	C(r_refdef)+rd_fvrectbottom_adj
+	fcoms	_r_refdef+rd_fvrectbottom_adj
 	fnstsw	%ax
 	testb	$0x45,%ah
 	jnz		LClampP3
 	fstp	%st(0)
-	flds	C(r_refdef)+rd_fvrectbottom_adj
+	flds	_r_refdef+rd_fvrectbottom_adj
 LClampP3:
 	ret
 

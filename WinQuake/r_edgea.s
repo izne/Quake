@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -41,11 +40,11 @@ float_1_point_001:		.single	1.001
 #define edgestoadd	4+8		// note odd stack offsets because of interleaving
 #define edgelist	8+12	// with pushes
 
-.globl C(R_EdgeCodeStart)
-C(R_EdgeCodeStart):
+.globl _R_EdgeCodeStart
+_R_EdgeCodeStart:
 
-.globl C(R_InsertNewEdges)
-C(R_InsertNewEdges):
+.globl _R_InsertNewEdges
+_R_InsertNewEdges:
 	pushl	%edi
 	pushl	%esi				// preserve register variables
 	movl	edgestoadd(%esp),%edx
@@ -110,8 +109,8 @@ LDone:
 
 #define predge	4+4
 
-.globl C(R_RemoveEdges)
-C(R_RemoveEdges):
+.globl _R_RemoveEdges
+_R_RemoveEdges:
 	pushl	%ebx
 	movl	predge(%esp),%eax
 
@@ -146,8 +145,8 @@ Lre_done:
 #define pedgelist	4+4		// note odd stack offset because of interleaving
 							// with pushes
 
-.globl C(R_StepActiveU)
-C(R_StepActiveU):
+.globl _R_StepActiveU
+_R_StepActiveU:
 	pushl	%edi
 	movl	pedgelist(%esp),%edx
 	pushl	%esi				// preserve register variables
@@ -203,7 +202,7 @@ LPushBack:
 	movl	et_next(%edx),%ebx
 
 // done if the -1 in edge_aftertail triggered this
-	cmpl	$(C(edge_aftertail)),%edx
+	cmpl	$(_edge_aftertail),%edx
 	jz		LUDone
 
 // pull the edge out of the edge list
@@ -236,7 +235,7 @@ LPushBackFound:
 	movl	%esi,%edx
 	movl	et_prev(%esi),%esi
 
-	cmpl	$(C(edge_tail)),%edx
+	cmpl	$(_edge_tail),%edx
 	jnz		LNewEdge
 
 LUDone:
@@ -260,10 +259,10 @@ TrailingEdge:
 	movl	st_insubmodel(%esi),%ecx
 	movl	0x12345678,%edx		// surfaces[1].st_next
 LPatch0:
-	movl	C(r_bmodelactive),%eax
+	movl	_r_bmodelactive,%eax
 	subl	%ecx,%eax
 	cmpl	%esi,%edx
-	movl	%eax,C(r_bmodelactive)
+	movl	%eax,_r_bmodelactive
 	jnz		LNoEmit				// surface isn't on top, just remove
 
 // emit a span (current top going away)
@@ -279,7 +278,7 @@ LPatch0:
 	movl	%edx,espan_t_u(%ebp)		// span->u = surf->last_u;
 
 	movl	%eax,espan_t_count(%ebp)	// span->count = iu - span->u;
-	movl	C(current_iv),%eax
+	movl	_current_iv,%eax
 	movl	%eax,espan_t_v(%ebp)		// span->v = current_iv;
 	movl	st_spans(%esi),%eax
 	movl	%eax,espan_t_pnext(%ebp)	// span->pnext = surf->spans;
@@ -322,35 +321,35 @@ Lgs_trailing:
 	jmp		TrailingEdge
 
 
-.globl C(R_GenerateSpans)
-C(R_GenerateSpans):
+.globl _R_GenerateSpans
+_R_GenerateSpans:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
 	pushl	%ebx
 
 // clear active surfaces to just the background surface
-	movl	C(surfaces),%eax
-	movl	C(edge_head_u_shift20),%edx
+	movl	_surfaces,%eax
+	movl	_edge_head_u_shift20,%edx
 	addl	$(st_size),%eax
 // %ebp = span_p throughout
-	movl	C(span_p),%ebp
+	movl	_span_p,%ebp
 
-	movl	$0,C(r_bmodelactive)
+	movl	$0,_r_bmodelactive
 
 	movl	%eax,st_next(%eax)
 	movl	%eax,st_prev(%eax)
 	movl	%edx,st_last_u(%eax)
-	movl	C(edge_head)+et_next,%ebx		// edge=edge_head.next
+	movl	_edge_head+et_next,%ebx		// edge=edge_head.next
 
 // generate spans
-	cmpl	$(C(edge_tail)),%ebx		// done if empty list
+	cmpl	$(_edge_tail),%ebx		// done if empty list
 	jz		Lgs_lastspan
 
 Lgs_edgeloop:
 
 	movl	et_surfs(%ebx),%edi
-	movl	C(surfaces),%eax
+	movl	_surfaces,%eax
 	movl	%edi,%esi
 	andl	$0xFFFF0000,%edi
 	andl	$0xFFFF,%esi
@@ -364,7 +363,7 @@ Lgs_edgeloop:
 
 // both leading and trailing
 	call	TrailingEdge
-	movl	C(surfaces),%eax
+	movl	_surfaces,%eax
 
 // ---------------------------------------------------------------
 // handle a leading edge
@@ -372,7 +371,7 @@ Lgs_edgeloop:
 
 Lgs_leading:
 	shrl	$16-SURF_T_SHIFT,%edi
-	movl	C(surfaces),%eax
+	movl	_surfaces,%eax
 	addl	%eax,%edi
 	movl	0x12345678,%esi		// surf2 = surfaces[1].next;
 LPatch2:
@@ -422,11 +421,11 @@ Lbmodel_leading:
 	testl	%edx,%edx
 	jnz		Lxl_done
 
-	movl	C(r_bmodelactive),%ecx
+	movl	_r_bmodelactive,%ecx
 	incl	%edx
 	incl	%ecx
 	movl	%edx,st_spanstate(%edi)
-	movl	%ecx,C(r_bmodelactive)
+	movl	%ecx,_r_bmodelactive
 
 // if (surf->key < surf2->key)
 //		goto newtop;
@@ -464,7 +463,7 @@ Lsortloop:
 
 	fld		%st(0)				// fu | fu
 	fmuls	st_d_zistepu(%edi)	// fu*surf->d_zistepu | fu
-	flds	C(fv)					// fv | fu*surf->d_zistepu | fu
+	flds	_fv					// fv | fu*surf->d_zistepu | fu
 	fmuls	st_d_zistepv(%edi)	// fv*surf->d_zistepv | fu*surf->d_zistepu | fu
 	fxch	%st(1)				// fu*surf->d_zistepu | fv*surf->d_zistepv | fu
 	fadds	st_d_ziorigin(%edi)	// fu*surf->d_zistepu + surf->d_ziorigin |
@@ -481,7 +480,7 @@ Lsortloop:
 								//  fv*surf->d_zistepv | fu
 	faddp	%st(0),%st(2)		// fu*surf2->d_zistepu | newzi | fu
 
-	flds	C(fv)					// fv | fu*surf2->d_zistepu | newzi | fu
+	flds	_fv					// fv | fu*surf2->d_zistepu | newzi | fu
 	fmuls	st_d_zistepv(%esi)	// fv*surf2->d_zistepv |
 								//  fu*surf2->d_zistepu | newzi | fu
 	fld		%st(2)				// newzi | fv*surf2->d_zistepv |
@@ -562,7 +561,7 @@ Lnewtop:
 	movl	%edx,espan_t_u(%ebp)		// span->u = surf->last_u;
 
 	movl	%eax,espan_t_count(%ebp)	// span->count = iu - span->u;
-	movl	C(current_iv),%eax
+	movl	_current_iv,%eax
 	movl	%eax,espan_t_v(%ebp)		// span->v = current_iv;
 	movl	st_spans(%esi),%eax
 	movl	%eax,espan_t_pnext(%ebp)	// span->pnext = surf->spans;
@@ -587,7 +586,7 @@ LInsertAndExit:
 
 Lgs_nextedge:
 	movl	et_next(%ebx),%ebx
-	cmpl	$(C(edge_tail)),%ebx
+	cmpl	$(_edge_tail),%ebx
 	jnz		Lgs_edgeloop
 
 // clean up at the right edge
@@ -597,7 +596,7 @@ Lgs_lastspan:
 // unfinished surfaces, so emit a span for whatever's on top
 	movl	0x12345678,%esi		// surfaces[1].st_next
 LPatch3:
-	movl	C(edge_tail_u_shift20),%eax
+	movl	_edge_tail_u_shift20,%eax
 	xorl	%ecx,%ecx
 	movl	st_last_u(%esi),%edx
 	subl	%edx,%eax
@@ -605,7 +604,7 @@ LPatch3:
 
 	movl	%edx,espan_t_u(%ebp)
 	movl	%eax,espan_t_count(%ebp)
-	movl	C(current_iv),%eax
+	movl	_current_iv,%eax
 	movl	%eax,espan_t_v(%ebp)
 	movl	st_spans(%esi),%eax
 	movl	%eax,espan_t_pnext(%ebp)
@@ -621,7 +620,7 @@ LPatch4:
 	jnz		Lgs_resetspanstate
 
 // store the final span_p
-	movl	%ebp,C(span_p)
+	movl	%ebp,_span_p
 
 	popl	%ebx				// restore register variables
 	popl	%esi
@@ -653,7 +652,7 @@ Lzcheck_for_newtop:
 
 	fld		%st(0)				// fu | fu
 	fmuls	st_d_zistepu(%edi)	// fu*surf->d_zistepu | fu
-	flds	C(fv)				// fv | fu*surf->d_zistepu | fu
+	flds	_fv				// fv | fu*surf->d_zistepu | fu
 	fmuls	st_d_zistepv(%edi)	// fv*surf->d_zistepv | fu*surf->d_zistepu | fu
 	fxch	%st(1)				// fu*surf->d_zistepu | fv*surf->d_zistepv | fu
 	fadds	st_d_ziorigin(%edi)	// fu*surf->d_zistepu + surf->d_ziorigin |
@@ -670,7 +669,7 @@ Lzcheck_for_newtop:
 								//  fv*surf->d_zistepv | fu
 	faddp	%st(0),%st(2)		// fu*surf2->d_zistepu | newzi | fu
 
-	flds	C(fv)				// fv | fu*surf2->d_zistepu | newzi | fu
+	flds	_fv				// fv | fu*surf2->d_zistepu | newzi | fu
 	fmuls	st_d_zistepv(%esi)	// fv*surf2->d_zistepv |
 								//  fu*surf2->d_zistepu | newzi | fu
 	fld		%st(2)				// newzi | fv*surf2->d_zistepv |
@@ -723,8 +722,8 @@ Lsortloop_fpop2:
 	jmp		Lsortloop
 
 
-.globl C(R_EdgeCodeEnd)
-C(R_EdgeCodeEnd):
+.globl _R_EdgeCodeEnd
+_R_EdgeCodeEnd:
 
 
 //----------------------------------------------------------------------
@@ -732,10 +731,10 @@ C(R_EdgeCodeEnd):
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(R_SurfacePatch)
-C(R_SurfacePatch):
+.globl _R_SurfacePatch
+_R_SurfacePatch:
 
-	movl	C(surfaces),%eax
+	movl	_surfaces,%eax
 	addl	$(st_size),%eax
 	movl	%eax,LPatch4-4
 

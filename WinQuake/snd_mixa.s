@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,8 +36,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define sc		8+16
 #define count	12+16
 
-.globl C(SND_PaintChannelFrom8)
-C(SND_PaintChannelFrom8):
+.globl _SND_PaintChannelFrom8
+_SND_PaintChannelFrom8:
 	pushl	%esi				// preserve register variables
 	pushl	%edi
 	pushl	%ebx
@@ -81,8 +80,8 @@ LRightSet:
 	addl	%ecx,%edi
 	shll	$7,%edx
 	movl	%edi,ch_pos(%ebx)
-	addl	$(C(snd_scaletable)),%eax
-	addl	$(C(snd_scaletable)),%edx
+	addl	$(_snd_scaletable),%eax
+	addl	$(_snd_scaletable),%edx
 	subl	%ebx,%ebx
 	movb	-1(%esi,%ecx,1),%bl
 
@@ -91,10 +90,10 @@ LRightSet:
 
 	movl	(%eax,%ebx,4),%edi
 	movl	(%edx,%ebx,4),%ebp
-	addl	C(paintbuffer)+psp_left-psp_size(,%ecx,psp_size),%edi
-	addl	C(paintbuffer)+psp_right-psp_size(,%ecx,psp_size),%ebp
-	movl	%edi,C(paintbuffer)+psp_left-psp_size(,%ecx,psp_size)
-	movl	%ebp,C(paintbuffer)+psp_right-psp_size(,%ecx,psp_size)
+	addl	_paintbuffer)+psp_left-psp_size(,%ecx,psp_size,%edi
+	addl	_paintbuffer)+psp_right-psp_size(,%ecx,psp_size,%ebp
+	movl	%edi,_paintbuffer)+psp_left-psp_size(,%ecx,psp_size
+	movl	%ebp,_paintbuffer)+psp_right-psp_size(,%ecx,psp_size
 	movb	-2(%esi,%ecx,1),%bl
 
 	decl	%ecx
@@ -109,19 +108,19 @@ LMix8Loop:
 //		paintbuffer[i].right += rscale[data];
 	movl	(%eax,%ebx,4),%edi
 	movl	(%edx,%ebx,4),%ebp
-	addl	C(paintbuffer)+psp_left-psp_size(,%ecx,psp_size),%edi
-	addl	C(paintbuffer)+psp_right-psp_size(,%ecx,psp_size),%ebp
+	addl	_paintbuffer)+psp_left-psp_size(,%ecx,psp_size,%edi
+	addl	_paintbuffer)+psp_right-psp_size(,%ecx,psp_size,%ebp
 	movb	-2(%esi,%ecx,1),%bl
-	movl	%edi,C(paintbuffer)+psp_left-psp_size(,%ecx,psp_size)
-	movl	%ebp,C(paintbuffer)+psp_right-psp_size(,%ecx,psp_size)
+	movl	%edi,_paintbuffer)+psp_left-psp_size(,%ecx,psp_size
+	movl	%ebp,_paintbuffer)+psp_right-psp_size(,%ecx,psp_size
 
 	movl	(%eax,%ebx,4),%edi
 	movl	(%edx,%ebx,4),%ebp
 	movb	-3(%esi,%ecx,1),%bl
-	addl	C(paintbuffer)+psp_left-psp_size*2(,%ecx,psp_size),%edi
-	addl	C(paintbuffer)+psp_right-psp_size*2(,%ecx,psp_size),%ebp
-	movl	%edi,C(paintbuffer)+psp_left-psp_size*2(,%ecx,psp_size)
-	movl	%ebp,C(paintbuffer)+psp_right-psp_size*2(,%ecx,psp_size)
+	addl	_paintbuffer)+psp_left-psp_size*2(,%ecx,psp_size,%edi
+	addl	_paintbuffer)+psp_right-psp_size*2(,%ecx,psp_size,%ebp
+	movl	%edi,_paintbuffer)+psp_left-psp_size*2(,%ecx,psp_size
+	movl	%ebp,_paintbuffer)+psp_right-psp_size*2(,%ecx,psp_size
 
 //	}
 	subl	$2,%ecx
@@ -140,18 +139,18 @@ LDone:
 // Transfer of stereo buffer to 16-bit DMA buffer code
 //----------------------------------------------------------------------
 
-.globl C(Snd_WriteLinearBlastStereo16)
-C(Snd_WriteLinearBlastStereo16):
+.globl _Snd_WriteLinearBlastStereo16
+_Snd_WriteLinearBlastStereo16:
 	pushl	%esi				// preserve register variables
 	pushl	%edi
 	pushl	%ebx
 
 //	int		i;
 //	int		val;
-	movl	C(snd_linear_count),%ecx
-	movl	C(snd_p),%ebx
-	movl	C(snd_vol),%esi
-	movl	C(snd_out),%edi
+	movl	_snd_linear_count,%ecx
+	movl	_snd_p,%ebx
+	movl	_snd_vol,%esi
+	movl	_snd_out,%edi
 
 //	for (i=0 ; i<snd_linear_count ; i+=2)
 //	{

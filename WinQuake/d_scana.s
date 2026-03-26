@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -38,23 +37,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //----------------------------------------------------------------------
 
 	.align 4
-.globl C(D_DrawTurbulent8Span)
-C(D_DrawTurbulent8Span):
+.globl _D_DrawTurbulent8Span
+_D_DrawTurbulent8Span:
 	pushl	%ebp				// preserve caller's stack frame pointer
 	pushl	%esi				// preserve register variables
 	pushl	%edi
 	pushl	%ebx
 
-	movl	C(r_turb_s),%esi
-	movl	C(r_turb_t),%ecx
-	movl	C(r_turb_pdest),%edi
-	movl	C(r_turb_spancount),%ebx
+	movl	_r_turb_s,%esi
+	movl	_r_turb_t,%ecx
+	movl	_r_turb_pdest,%edi
+	movl	_r_turb_spancount,%ebx
 
 Llp:
 	movl	%ecx,%eax
 	movl	%esi,%edx
 	sarl	$16,%eax
-	movl	C(r_turb_turb),%ebp
+	movl	_r_turb_turb,%ebp
 	sarl	$16,%edx
 	andl	$(CYCLE-1),%eax
 	andl	$(CYCLE-1),%edx
@@ -67,17 +66,17 @@ Llp:
 	andl	$(TURB_TEX_SIZE-1),%eax
 	andl	$(TURB_TEX_SIZE-1),%edx
 	shll	$6,%edx
-	movl	C(r_turb_pbase),%ebp
+	movl	_r_turb_pbase,%ebp
 	addl	%eax,%edx
 	incl	%edi
-	addl	C(r_turb_sstep),%esi
-	addl	C(r_turb_tstep),%ecx
+	addl	_r_turb_sstep,%esi
+	addl	_r_turb_tstep,%ecx
 	movb	(%ebp,%edx,1),%dl
 	decl	%ebx
 	movb	%dl,-1(%edi)
 	jnz		Llp
 
-	movl	%edi,C(r_turb_pdest)
+	movl	%edi,_r_turb_pdest
 
 	popl	%ebx				// restore register variables
 	popl	%edi

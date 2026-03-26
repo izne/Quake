@@ -1,6 +1,5 @@
 //
-// d_copy.s
-// x86 assembly-language screen copying code.
+
 //
 
 #include "asm_i386_asm.h"
@@ -23,17 +22,17 @@ LDestDelta:		.long	0
 
 	.text
 
-.globl C(VGA_UpdatePlanarScreen)
-C(VGA_UpdatePlanarScreen):
+.globl _VGA_UpdatePlanarScreen
+_VGA_UpdatePlanarScreen:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables
 	pushl	%ebx
 
-	movl	C(VGA_bufferrowbytes),%eax
+	movl	_VGA_bufferrowbytes,%eax
 	shll	$1,%eax
 	movl	%eax,LBlockSrcStep
-	movl	C(VGA_rowbytes),%eax
+	movl	_VGA_rowbytes,%eax
 	shll	$1,%eax
 	movl	%eax,LBlockDestStep
 
@@ -43,15 +42,15 @@ C(VGA_UpdatePlanarScreen):
 	incl	%edx
 
 	movl	bufptr(%esp),%esi
-	movl	C(VGA_pagebase),%edi
-	movl	C(VGA_height),%ebp
+	movl	_VGA_pagebase,%edi
+	movl	_VGA_height,%ebp
 	shrl	$1,%ebp
 
-	movl	C(VGA_width),%ecx
-	movl	C(VGA_bufferrowbytes),%eax
+	movl	_VGA_width,%ecx
+	movl	_VGA_bufferrowbytes,%eax
 	subl	%ecx,%eax
 	movl	%eax,LSrcDelta
-	movl	C(VGA_rowbytes),%eax
+	movl	_VGA_rowbytes,%eax
 	shll	$2,%eax
 	subl	%ecx,%eax
 	movl	%eax,LDestDelta
@@ -115,8 +114,8 @@ LColumnLoop:
 #define srcrowbytes		20+16
 #define destrowbytes	24+16
 
-.globl C(VGA_UpdateLinearScreen)
-C(VGA_UpdateLinearScreen):
+.globl _VGA_UpdateLinearScreen
+_VGA_UpdateLinearScreen:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
 	pushl	%esi				// preserve register variables

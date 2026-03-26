@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -44,8 +43,8 @@ Ltemp:	.long	0
 #define p		12+12			// because only partially pushed
 
 	.align 4
-.globl C(SV_HullPointContents)
-C(SV_HullPointContents):
+.globl _SV_HullPointContents
+_SV_HullPointContents:
 	pushl	%edi				// preserve register variables
 	movl	num(%esp),%eax
 	testl	%eax,%eax

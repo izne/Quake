@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -55,8 +54,8 @@ lzistepx:		.long	0
 	.text
 
 #ifndef NeXT
-	.extern C(D_PolysetSetEdgeTable)
-	.extern C(D_RasterizeAliasPolySmooth)
+	.extern _D_PolysetSetEdgeTable
+	.extern _D_RasterizeAliasPolySmooth
 #endif
 
 //----------------------------------------------------------------------
@@ -65,8 +64,8 @@ lzistepx:		.long	0
 
 #define skinwidth	4+0
 
-.globl C(D_PolysetCalcGradients)
-C(D_PolysetCalcGradients):
+.globl _D_PolysetCalcGradients
+_D_PolysetCalcGradients:
 
 //	p00_minus_p20 = r_p0[0] - r_p2[0];
 //	p01_minus_p21 = r_p0[1] - r_p2[1];
@@ -78,12 +77,12 @@ C(D_PolysetCalcGradients):
 //
 //	ystepdenominv = -xstepdenominv;
 
-	fildl	C(r_p0)+0		// r_p0[0]
-	fildl	C(r_p2)+0		// r_p2[0] | r_p0[0]
-	fildl	C(r_p0)+4		// r_p0[1] | r_p2[0] | r_p0[0]
-	fildl	C(r_p2)+4		// r_p2[1] | r_p0[1] | r_p2[0] | r_p0[0]
-	fildl	C(r_p1)+0		// r_p1[0] | r_p2[1] | r_p0[1] | r_p2[0] | r_p0[0]
-	fildl	C(r_p1)+4		// r_p1[1] | r_p1[0] | r_p2[1] | r_p0[1] |
+	fildl	_r_p0+0		// r_p0[0]
+	fildl	_r_p2+0		// r_p2[0] | r_p0[0]
+	fildl	_r_p0+4		// r_p0[1] | r_p2[0] | r_p0[0]
+	fildl	_r_p2+4		// r_p2[1] | r_p0[1] | r_p2[0] | r_p0[0]
+	fildl	_r_p1+0		// r_p1[0] | r_p2[1] | r_p0[1] | r_p2[0] | r_p0[0]
+	fildl	_r_p1+4		// r_p1[1] | r_p1[0] | r_p2[1] | r_p0[1] |
 							//  r_p2[0] | r_p0[0]
 	fxch	%st(3)			// r_p0[1] | r_p1[0] | r_p2[1] | r_p1[1] |
 							//  r_p2[0] | r_p0[0]
@@ -103,7 +102,7 @@ C(D_PolysetCalcGradients):
 							//  p00_minus_p20 | p10_minus_p20
 	fxch	%st(1)			// p01_minus_p21 | p11_minus_p21 |
 							//  p00_minus_p20 | p10_minus_p20
-	flds	C(d_xdenom)		// d_xdenom | p01_minus_p21 | p11_minus_p21 |
+	flds	_d_xdenom		// d_xdenom | p01_minus_p21 | p11_minus_p21 |
 							//  p00_minus_p20 | p10_minus_p20
 	fxch	%st(4)			// p10_minus_p20 | p01_minus_p21 | p11_minus_p21 |
 							//  p00_minus_p20 | d_xdenom
@@ -118,11 +117,11 @@ C(D_PolysetCalcGradients):
 //	t0 = r_p0[4] - r_p2[4];
 //	t1 = r_p1[4] - r_p2[4];
 
-	fildl	C(r_p2)+16		// r_p2[4] | xstepdenominv | p00_minus_p20 |
+	fildl	_r_p2+16		// r_p2[4] | xstepdenominv | p00_minus_p20 |
 							//  p11_minus_p21
-	fildl	C(r_p0)+16		// r_p0[4] | r_p2[4] | xstepdenominv |
+	fildl	_r_p0+16		// r_p0[4] | r_p2[4] | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p1)+16		// r_p1[4] | r_p0[4] | r_p2[4] | xstepdenominv |
+	fildl	_r_p1+16		// r_p1[4] | r_p0[4] | r_p2[4] | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
 	fxch	%st(2)			// r_p2[4] | r_p0[4] | r_p1[4] | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
@@ -195,20 +194,20 @@ C(D_PolysetCalcGradients):
 							//  xstepdenominv | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
 	fldcw	ceil_cw
-	fistpl	C(r_lstepy)		// r_lstepx | ystepdenominv | xstepdenominv |
+	fistpl	_r_lstepy		// r_lstepx | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fistpl	C(r_lstepx)		// ystepdenominv | xstepdenominv | p00_minus_p20 |
+	fistpl	_r_lstepx		// ystepdenominv | xstepdenominv | p00_minus_p20 |
 							//  p11_minus_p21
 	fldcw	single_cw
 
 //	t0 = r_p0[2] - r_p2[2];
 //	t1 = r_p1[2] - r_p2[2];
 
-	fildl	C(r_p2)+8		// r_p2[2] | ystepdenominv | xstepdenominv |
+	fildl	_r_p2+8		// r_p2[2] | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p0)+8		// r_p0[2] | r_p2[2] | ystepdenominv |
+	fildl	_r_p0+8		// r_p0[2] | r_p2[2] | ystepdenominv |
 							//   xstepdenominv | p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p1)+8		// r_p1[2] | r_p0[2] | r_p2[2] | ystepdenominv |
+	fildl	_r_p1+8		// r_p1[2] | r_p0[2] | r_p2[2] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
 	fxch	%st(2)			// r_p2[2] | r_p0[2] | r_p1[2] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
@@ -280,19 +279,19 @@ C(D_PolysetCalcGradients):
 							//  (t1*p01_minus_p21 - t0*p11_minus_p21)*
 							//  xstepdenominv | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
-	fistpl	C(r_sstepy)		// r_sstepx | ystepdenominv | xstepdenominv |
+	fistpl	_r_sstepy		// r_sstepx | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fistpl	C(r_sstepx)		// ystepdenominv | xstepdenominv | p00_minus_p20 |
+	fistpl	_r_sstepx		// ystepdenominv | xstepdenominv | p00_minus_p20 |
 							//  p11_minus_p21
 
 //	t0 = r_p0[3] - r_p2[3];
 //	t1 = r_p1[3] - r_p2[3];
 
-	fildl	C(r_p2)+12		// r_p2[3] | ystepdenominv | xstepdenominv |
+	fildl	_r_p2+12		// r_p2[3] | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p0)+12		// r_p0[3] | r_p2[3] | ystepdenominv |
+	fildl	_r_p0+12		// r_p0[3] | r_p2[3] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p1)+12		// r_p1[3] | r_p0[3] | r_p2[3] | ystepdenominv |
+	fildl	_r_p1+12		// r_p1[3] | r_p0[3] | r_p2[3] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
 	fxch	%st(2)			// r_p2[3] | r_p0[3] | r_p1[3] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
@@ -365,19 +364,19 @@ C(D_PolysetCalcGradients):
 							//  (t1*p01_minus_p21 - t0*p11_minus_p21)*
 							//  xstepdenominv | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
-	fistpl	C(r_tstepy)		// r_tstepx | ystepdenominv | xstepdenominv |
+	fistpl	_r_tstepy		// r_tstepx | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fistpl	C(r_tstepx)		// ystepdenominv | xstepdenominv | p00_minus_p20 |
+	fistpl	_r_tstepx		// ystepdenominv | xstepdenominv | p00_minus_p20 |
 							//  p11_minus_p21
 
 //	t0 = r_p0[5] - r_p2[5];
 //	t1 = r_p1[5] - r_p2[5];
 
-	fildl	C(r_p2)+20		// r_p2[5] | ystepdenominv | xstepdenominv |
+	fildl	_r_p2+20		// r_p2[5] | ystepdenominv | xstepdenominv |
 							//  p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p0)+20		// r_p0[5] | r_p2[5] | ystepdenominv |
+	fildl	_r_p0+20		// r_p0[5] | r_p2[5] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
-	fildl	C(r_p1)+20		// r_p1[5] | r_p0[5] | r_p2[5] | ystepdenominv |
+	fildl	_r_p1+20		// r_p1[5] | r_p0[5] | r_p2[5] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
 	fxch	%st(2)			// r_p2[5] | r_p0[5] | r_p1[5] | ystepdenominv |
 							//  xstepdenominv | p00_minus_p20 | p11_minus_p21
@@ -441,9 +440,9 @@ C(D_PolysetCalcGradients):
 							//  xstepdenominv |
 							//  (t1*p00_minus_p20 - t0*p10_minus_p20) *
 							//  ystepdenominv
-	fistpl	C(r_zistepx)	// (t1*p00_minus_p20 - t0*p10_minus_p20) *
+	fistpl	_r_zistepx)	// (t1*p00_minus_p20 - t0*p10_minus_p20 *
 							//  ystepdenominv
-	fistpl	C(r_zistepy)
+	fistpl	_r_zistepy
 
 //	a_sstepxfrac = r_sstepx << 16;
 //	a_tstepxfrac = r_tstepx << 16;
@@ -451,20 +450,20 @@ C(D_PolysetCalcGradients):
 //	a_ststepxwhole = r_affinetridesc.skinwidth * (r_tstepx >> 16) +
 //			(r_sstepx >> 16);
 
-	movl	C(r_sstepx),%eax
-	movl	C(r_tstepx),%edx
+	movl	_r_sstepx,%eax
+	movl	_r_tstepx,%edx
 	shll	$16,%eax
 	shll	$16,%edx
-	movl	%eax,C(a_sstepxfrac)
-	movl	%edx,C(a_tstepxfrac)
+	movl	%eax,_a_sstepxfrac
+	movl	%edx,_a_tstepxfrac
 
-	movl	C(r_sstepx),%ecx
-	movl	C(r_tstepx),%eax
+	movl	_r_sstepx,%ecx
+	movl	_r_tstepx,%eax
 	sarl	$16,%ecx
 	sarl	$16,%eax
 	imull	skinwidth(%esp)
 	addl	%ecx,%eax
-	movl	%eax,C(a_ststepxwhole)
+	movl	%eax,_a_ststepxwhole
 
 	ret
 
@@ -479,8 +478,8 @@ C(D_PolysetCalcGradients):
 #define lp2	8+16
 #define lp3	12+16
 
-.globl C(D_PolysetRecursiveTriangle)
-C(D_PolysetRecursiveTriangle):
+.globl _D_PolysetRecursiveTriangle
+_D_PolysetRecursiveTriangle:
 	pushl	%ebp				// preserve caller stack frame pointer
 	pushl	%esi				// preserve register variables
 	pushl	%edi
@@ -671,7 +670,7 @@ LDraw:
 	movl	0(%esp),%ebp
 
 //	zbuf = zspantable[new[1]] + new[0];
-	movl	C(zspantable)(,%ecx,4),%eax
+	movl	_zspantable)(,%ecx,4,%eax
 
 //	if (z >= *zbuf)
 //	{
@@ -692,19 +691,19 @@ LDraw:
 	sarl	$16,%edx
 	subl	%ecx,%ecx
 
-	movl	C(skintable)(,%eax,4),%eax
+	movl	_skintable)(,%eax,4,%eax
 	movl	4(%esp),%ebp
 
 	movb	(%eax,%edx,),%cl
-	movl	C(d_pcolormap),%edx
+	movl	_d_pcolormap,%edx
 
 	movb	(%edx,%ecx,),%dl
 	movl	0(%esp),%ecx
 
 //		d_viewbuffer[d_scantable[new[1]] + new[0]] = pix;
-	movl	C(d_scantable)(,%ebp,4),%eax
+	movl	_d_scantable)(,%ebp,4,%eax
 	addl	%eax,%ecx
-	movl	C(d_viewbuffer),%eax
+	movl	_d_viewbuffer,%eax
 	movb	%dl,(%eax,%ecx,1)
 
 //	}
@@ -717,14 +716,14 @@ LNoDraw:
 	pushl	%esp
 	pushl	%ebx
 	pushl	%edi
-	call	C(D_PolysetRecursiveTriangle)
+	call	_D_PolysetRecursiveTriangle
 
 //	D_PolysetRecursiveTriangle (lp3, new, lp2);
 	movl	%esp,%ebx
 	pushl	%esi
 	pushl	%ebx
 	pushl	%edi
-	call	C(D_PolysetRecursiveTriangle)
+	call	_D_PolysetRecursiveTriangle
 	addl	$24,%esp
 
 LDone:
@@ -742,16 +741,16 @@ LDone:
 
 #define pspans	4+8
 
-.globl C(D_PolysetAff8Start)
-C(D_PolysetAff8Start):
+.globl _D_PolysetAff8Start
+_D_PolysetAff8Start:
 
-.globl C(D_PolysetDrawSpans8)
-C(D_PolysetDrawSpans8):
+.globl _D_PolysetDrawSpans8
+_D_PolysetDrawSpans8:
 	pushl	%esi				// preserve register variables
 	pushl	%ebx
 
 	movl	pspans(%esp),%esi	// point to the first span descriptor
-	movl	C(r_zistepx),%ecx
+	movl	_r_zistepx,%ecx
 
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi
@@ -775,29 +774,29 @@ LSpanLoop:
 //		{
 //			d_aspancount += ubasestep;
 //		}
-	movl	C(d_aspancount),%eax
+	movl	_d_aspancount,%eax
 	subl	%edx,%eax
 
-	movl	C(erroradjustup),%edx
-	movl	C(errorterm),%ebx
+	movl	_erroradjustup,%edx
+	movl	_errorterm,%ebx
 	addl	%edx,%ebx
 	js		LNoTurnover
 
-	movl	C(erroradjustdown),%edx
-	movl	C(d_countextrastep),%edi
+	movl	_erroradjustdown,%edx
+	movl	_d_countextrastep,%edi
 	subl	%edx,%ebx
-	movl	C(d_aspancount),%ebp
-	movl	%ebx,C(errorterm)
+	movl	_d_aspancount,%ebp
+	movl	%ebx,_errorterm
 	addl	%edi,%ebp
-	movl	%ebp,C(d_aspancount)
+	movl	%ebp,_d_aspancount
 	jmp		LRightEdgeStepped
 
 LNoTurnover:
-	movl	C(d_aspancount),%edi
-	movl	C(ubasestep),%edx
-	movl	%ebx,C(errorterm)
+	movl	_d_aspancount,%edi
+	movl	_ubasestep,%edx
+	movl	%ebx,_errorterm
 	addl	%edx,%edi
-	movl	%edi,C(d_aspancount)
+	movl	%edi,_d_aspancount
 
 LRightEdgeStepped:
 	cmpl	$1,%eax
@@ -808,16 +807,16 @@ LRightEdgeStepped:
 //
 // set up advancetable
 //
-	movl	C(a_ststepxwhole),%ecx
-	movl	C(r_affinetridesc)+atd_skinwidth,%edx
+	movl	_a_ststepxwhole,%ecx
+	movl	_r_affinetridesc+atd_skinwidth,%edx
 
 	movl	%ecx,advancetable+4	// advance base in t
 	addl	%edx,%ecx
 
 	movl	%ecx,advancetable	// advance extra in t
-	movl	C(a_tstepxfrac),%ecx
+	movl	_a_tstepxfrac,%ecx
 
-	movw	C(r_lstepx),%cx
+	movw	_r_lstepx,%cx
 	movl	%eax,%edx			// count
 
 	movl	%ecx,tstep
@@ -857,10 +856,10 @@ LRightEdgeStepped:
 // %esi = ptex
 // %edi = pdest
 // %ebp = 1/z
-// tstep low word = C(r_lstepx)
-// tstep high word = C(a_tstepxfrac)
-// C(a_sstepxfrac) low word = 0
-// C(a_sstepxfrac) high word = C(a_sstepxfrac)
+// tstep low word = _r_lstepx
+// tstep high word = _a_tstepxfrac
+// _a_sstepxfrac low word = 0
+// _a_sstepxfrac) high word = C(a_sstepxfrac
 
 LDrawLoop:
 
@@ -882,7 +881,7 @@ Lp1:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw7:
@@ -900,7 +899,7 @@ Lp2:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw6:
@@ -918,7 +917,7 @@ Lp3:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw5:
@@ -936,7 +935,7 @@ Lp4:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw4:
@@ -954,7 +953,7 @@ Lp5:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw3:
@@ -972,7 +971,7 @@ Lp6:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw2:
@@ -990,7 +989,7 @@ Lp7:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 LDraw1:
@@ -1008,7 +1007,7 @@ Lp8:
 	sbbl	%eax,%eax
 	addl	lzistepx,%ebp
 	adcl	$0,%ebp
-	addl	C(a_sstepxfrac),%ebx
+	addl	_a_sstepxfrac,%ebx
 	adcl	advancetable+4(,%eax,4),%esi
 
 	addl	$8,%edi
@@ -1056,14 +1055,14 @@ LPatch9:
 
 	jmp		LNextSpanESISet
 
-.globl C(D_PolysetAff8End)
-C(D_PolysetAff8End):
+.globl _D_PolysetAff8End
+_D_PolysetAff8End:
 
 
 #define pcolormap		4
 
-.globl C(D_Aff8Patch)
-C(D_Aff8Patch):
+.globl _D_Aff8Patch
+_D_Aff8Patch:
 	movl	pcolormap(%esp),%eax
 	movl	%eax,LPatch1-4
 	movl	%eax,LPatch2-4
@@ -1083,8 +1082,8 @@ C(D_Aff8Patch):
 // triangle drawing code
 //----------------------------------------------------------------------
 
-.globl C(D_PolysetDraw)
-C(D_PolysetDraw):
+.globl _D_PolysetDraw
+_D_PolysetDraw:
 
 //	spanpackage_t	spans[DPS_MAXSPANS + 1 +
 //			((CACHE_SIZE - 1) / sizeof(spanpackage_t)) + 1];
@@ -1096,27 +1095,27 @@ C(D_PolysetDraw):
 	movl	%esp,%eax
 	addl	$(CACHE_SIZE - 1),%eax
 	andl	$(~(CACHE_SIZE - 1)),%eax
-	movl	%eax,C(a_spans)
+	movl	%eax,_a_spans
 
 //	if (r_affinetridesc.drawtype)
 //		D_DrawSubdiv ();
 //	else
 //		D_DrawNonSubdiv ();
-	movl	C(r_affinetridesc)+atd_drawtype,%eax
+	movl	_r_affinetridesc+atd_drawtype,%eax
 	testl	%eax,%eax
-	jz		C(D_DrawNonSubdiv)
+	jz		_D_DrawNonSubdiv
 
 	pushl	%ebp				// preserve caller stack frame pointer
 
 //	lnumtriangles = r_affinetridesc.numtriangles;
-	movl	C(r_affinetridesc)+atd_numtriangles,%ebp
+	movl	_r_affinetridesc+atd_numtriangles,%ebp
 
 	pushl	%esi				// preserve register variables
 	shll	$4,%ebp
 
 	pushl	%ebx
 //	ptri = r_affinetridesc.ptriangles;
-	movl	C(r_affinetridesc)+atd_ptriangles,%ebx
+	movl	_r_affinetridesc+atd_ptriangles,%ebx
 
 	pushl	%edi
 
@@ -1127,7 +1126,7 @@ C(D_PolysetDraw):
 //	int				s0, s1, s2;
 
 //	pfv = r_affinetridesc.pfinalverts;
-	movl	C(r_affinetridesc)+atd_pfinalverts,%edi
+	movl	_r_affinetridesc+atd_pfinalverts,%edi
 
 //	for (i=0 ; i<lnumtriangles ; i++)
 //	{
@@ -1177,9 +1176,9 @@ Llooptop:
 	movl	fv_v+16(%ecx),%eax
 	andl	$0xFF00,%eax
 	fmulp	%st(0),%st(2)	// i0v1-i1v1*i0v0-i2v0 | i0v0-i1v0*i0v1-i2v1
-	addl	C(acolormap),%eax
+	addl	_acolormap,%eax
 	fsubp	%st(0),%st(1)	// (i0v1-i1v1)*(i0v0-i2v0)-(i0v0-i1v0)*(i0v1-i2v1)
-	movl	%eax,C(d_pcolormap)
+	movl	%eax,_d_pcolormap
 	fstps	Ltemp
 	movl	Ltemp,%eax
 	subl	$0x80000001,%eax
@@ -1195,7 +1194,7 @@ Llooptop:
 	pushl	%edx
 	pushl	%esi
 	pushl	%ecx
-	call	C(D_PolysetRecursiveTriangle)
+	call	_D_PolysetRecursiveTriangle
 
 	subl	$16,%ebp
 	jnz		Llooptop
@@ -1220,7 +1219,7 @@ Lfacesback:
 
 //			if (index0->flags & ALIAS_ONSEAM)
 //				index0->v[2] += r_affinetridesc.seamfixupX16;
-	movl	C(r_affinetridesc)+atd_seamfixupX16,%eax
+	movl	_r_affinetridesc+atd_seamfixupX16,%eax
 	testl	$(ALIAS_ONSEAM),fv_flags(%ecx)
 	jz		Lp11
 	addl	%eax,fv_v+8(%ecx)
@@ -1244,7 +1243,7 @@ Lp13:
 	pushl	%edx
 	pushl	%esi
 	pushl	%ecx
-	call	C(D_PolysetRecursiveTriangle)
+	call	_D_PolysetRecursiveTriangle
 
 //			index0->v[2] = s0;
 //			index1->v[2] = s1;
@@ -1281,22 +1280,22 @@ Ldone2:
 
 #define height	4+16
 
-.globl C(D_PolysetScanLeftEdge)
-C(D_PolysetScanLeftEdge):
+.globl _D_PolysetScanLeftEdge
+_D_PolysetScanLeftEdge:
 	pushl	%ebp				// preserve caller stack frame pointer
 	pushl	%esi				// preserve register variables
 	pushl	%edi
 	pushl	%ebx
 
 	movl	height(%esp),%eax
-	movl	C(d_sfrac),%ecx
+	movl	_d_sfrac,%ecx
 	andl	$0xFFFF,%eax
-	movl	C(d_ptex),%ebx
+	movl	_d_ptex,%ebx
 	orl		%eax,%ecx
-	movl	C(d_pedgespanpackage),%esi
-	movl	C(d_tfrac),%edx
-	movl	C(d_light),%edi
-	movl	C(d_zi),%ebp
+	movl	_d_pedgespanpackage,%esi
+	movl	_d_tfrac,%edx
+	movl	_d_light,%edi
+	movl	_d_zi,%ebp
 
 // %eax: scratch
 // %ebx: d_ptex
@@ -1320,11 +1319,11 @@ LScanLoop:
 //		d_pedgespanpackage->sfrac = d_sfrac << 16;
 //		d_pedgespanpackage->tfrac = d_tfrac << 16;
 	movl	%ebx,spanpackage_t_ptex(%esi)
-	movl	C(d_pdest),%eax
+	movl	_d_pdest,%eax
 	movl	%eax,spanpackage_t_pdest(%esi)
-	movl	C(d_pz),%eax
+	movl	_d_pz,%eax
 	movl	%eax,spanpackage_t_pz(%esi)
-	movl	C(d_aspancount),%eax
+	movl	_d_aspancount,%eax
 	movl	%eax,spanpackage_t_count(%esi)
 	movl	%edi,spanpackage_t_light(%esi)
 	movl	%ebp,spanpackage_t_zi(%esi)
@@ -1336,13 +1335,13 @@ LScanLoop:
 
 //		d_pedgespanpackage++;
 	addl	$(spanpackage_t_size),%esi
-	movl	C(erroradjustup),%eax
-	movl	%esi,C(d_pedgespanpackage)
+	movl	_erroradjustup,%eax
+	movl	%esi,_d_pedgespanpackage
 
 //		errorterm += erroradjustup;
-	movl	C(errorterm),%esi
+	movl	_errorterm,%esi
 	addl	%eax,%esi
-	movl	C(d_pdest),%eax
+	movl	_d_pdest,%eax
 
 //		if (errorterm >= 0)
 //		{
@@ -1350,10 +1349,10 @@ LScanLoop:
 
 //			errorterm -= erroradjustdown;
 //			d_pdest += d_pdestextrastep;
-	subl	C(erroradjustdown),%esi
-	addl	C(d_pdestextrastep),%eax
-	movl	%esi,C(errorterm)
-	movl	%eax,C(d_pdest)
+	subl	_erroradjustdown,%esi
+	addl	_d_pdestextrastep,%eax
+	movl	%esi,_errorterm
+	movl	%eax,_d_pdest
 
 //			d_pz += d_pzextrastep;
 //			d_aspancount += d_countextrastep;
@@ -1362,15 +1361,15 @@ LScanLoop:
 //			d_ptex += d_sfrac >> 16;
 //			d_sfrac &= 0xFFFF;
 //			d_tfrac += d_tfracextrastep;
-	movl	C(d_pz),%eax
-	movl	C(d_aspancount),%esi
-	addl	C(d_pzextrastep),%eax
-	addl	C(d_sfracextrastep),%ecx
-	adcl	C(d_ptexextrastep),%ebx
-	addl	C(d_countextrastep),%esi
-	movl	%eax,C(d_pz)
-	movl	C(d_tfracextrastep),%eax
-	movl	%esi,C(d_aspancount)
+	movl	_d_pz,%eax
+	movl	_d_aspancount,%esi
+	addl	_d_pzextrastep,%eax
+	addl	_d_sfracextrastep,%ecx
+	adcl	_d_ptexextrastep,%ebx
+	addl	_d_countextrastep,%esi
+	movl	%eax,_d_pz
+	movl	_d_tfracextrastep,%eax
+	movl	%esi,_d_aspancount
 	addl	%eax,%edx
 
 //			if (d_tfrac & 0x10000)
@@ -1379,7 +1378,7 @@ LScanLoop:
 
 //				d_ptex += r_affinetridesc.skinwidth;
 //				d_tfrac &= 0xFFFF;
-	addl	C(r_affinetridesc)+atd_skinwidth,%ebx
+	addl	_r_affinetridesc+atd_skinwidth,%ebx
 
 //			}
 
@@ -1387,11 +1386,11 @@ LSkip1:
 
 //			d_light += d_lightextrastep;
 //			d_zi += d_ziextrastep;
-	addl	C(d_lightextrastep),%edi
-	addl	C(d_ziextrastep),%ebp
+	addl	_d_lightextrastep,%edi
+	addl	_d_ziextrastep,%ebp
 
 //		}
-	movl	C(d_pedgespanpackage),%esi
+	movl	_d_pedgespanpackage,%esi
 	decl	%ecx
 	testl	$0xFFFF,%ecx
 	jnz		LScanLoop
@@ -1406,11 +1405,11 @@ LSkip1:
 //		{
 
 LNoLeftEdgeTurnover:
-	movl	%esi,C(errorterm)
+	movl	%esi,_errorterm
 
 //			d_pdest += d_pdestbasestep;
-	addl	C(d_pdestbasestep),%eax
-	movl	%eax,C(d_pdest)
+	addl	_d_pdestbasestep,%eax
+	movl	%eax,_d_pdest
 
 //			d_pz += d_pzbasestep;
 //			d_aspancount += ubasestep;
@@ -1418,17 +1417,17 @@ LNoLeftEdgeTurnover:
 //			d_sfrac += d_sfracbasestep;
 //			d_ptex += d_sfrac >> 16;
 //			d_sfrac &= 0xFFFF;
-	movl	C(d_pz),%eax
-	movl	C(d_aspancount),%esi
-	addl	C(d_pzbasestep),%eax
-	addl	C(d_sfracbasestep),%ecx
-	adcl	C(d_ptexbasestep),%ebx
-	addl	C(ubasestep),%esi
-	movl	%eax,C(d_pz)
-	movl	%esi,C(d_aspancount)
+	movl	_d_pz,%eax
+	movl	_d_aspancount,%esi
+	addl	_d_pzbasestep,%eax
+	addl	_d_sfracbasestep,%ecx
+	adcl	_d_ptexbasestep,%ebx
+	addl	_ubasestep,%esi
+	movl	%eax,_d_pz
+	movl	%esi,_d_aspancount
 
 //			d_tfrac += d_tfracbasestep;
-	movl	C(d_tfracbasestep),%esi
+	movl	_d_tfracbasestep,%esi
 	addl	%esi,%edx
 
 //			if (d_tfrac & 0x10000)
@@ -1437,7 +1436,7 @@ LNoLeftEdgeTurnover:
 
 //				d_ptex += r_affinetridesc.skinwidth;
 //				d_tfrac &= 0xFFFF;
-	addl	C(r_affinetridesc)+atd_skinwidth,%ebx
+	addl	_r_affinetridesc+atd_skinwidth,%ebx
 
 //			}
 
@@ -1445,12 +1444,12 @@ LSkip2:
 
 //			d_light += d_lightbasestep;
 //			d_zi += d_zibasestep;
-	addl	C(d_lightbasestep),%edi
-	addl	C(d_zibasestep),%ebp
+	addl	_d_lightbasestep,%edi
+	addl	_d_zibasestep,%ebp
 
 //		}
 //	} while (--height);
-	movl	C(d_pedgespanpackage),%esi
+	movl	_d_pedgespanpackage,%esi
 	decl	%ecx
 	testl	$0xFFFF,%ecx
 	jnz		LScanLoop
@@ -1469,8 +1468,8 @@ LSkip2:
 #define fv			4+8
 #define	numverts	8+8
 
-.globl C(D_PolysetDrawFinalVerts)
-C(D_PolysetDrawFinalVerts):
+.globl _D_PolysetDrawFinalVerts
+_D_PolysetDrawFinalVerts:
 	pushl	%ebp				// preserve caller stack frame pointer
 	pushl	%ebx
 
@@ -1493,16 +1492,16 @@ LFVLoop:
 //			(fv->v[1] < r_refdef.vrectbottom))
 //		{
 	movl	fv_v+0(%ebx),%eax
-	movl	C(r_refdef)+rd_vrectright,%edx
+	movl	_r_refdef+rd_vrectright,%edx
 	cmpl	%edx,%eax
 	jge		LNextVert
 	movl	fv_v+4(%ebx),%esi
-	movl	C(r_refdef)+rd_vrectbottom,%edx
+	movl	_r_refdef+rd_vrectbottom,%edx
 	cmpl	%edx,%esi
 	jge		LNextVert
 
 //			zbuf = zspantable[fv->v[1]] + fv->v[0];
-	movl	C(zspantable)(,%esi,4),%edi
+	movl	_zspantable)(,%esi,4,%edi
 
 //			z = fv->v[5]>>16;
 	movl	fv_v+20(%ebx),%edx
@@ -1520,7 +1519,7 @@ LFVLoop:
 //				pix = skintable[fv->v[3]>>16][fv->v[2]>>16];
 	movl	fv_v+12(%ebx),%edi
 	shrl	$16,%edi
-	movl	C(skintable)(,%edi,4),%edi
+	movl	_skintable)(,%edi,4,%edi
 	movl	fv_v+8(%ebx),%edx
 	shrl	$16,%edx
 	movb	(%edi,%edx),%dl
@@ -1530,12 +1529,12 @@ LFVLoop:
 	andl	$0xFF00,%edi
 	andl	$0x00FF,%edx
 	addl	%edx,%edi
-	movl	C(acolormap),%edx
+	movl	_acolormap,%edx
 	movb	(%edx,%edi,1),%dl
 
 //				d_viewbuffer[d_scantable[fv->v[1]] + fv->v[0]] = pix;
-	movl	C(d_scantable)(,%esi,4),%edi
-	movl	C(d_viewbuffer),%esi
+	movl	_d_scantable)(,%esi,4,%edi
+	movl	_d_viewbuffer,%esi
 	addl	%eax,%edi
 	movb	%dl,(%esi,%edi)
 
@@ -1560,14 +1559,14 @@ LNextVert:
 // not C-callable because of stack buffer cleanup
 //----------------------------------------------------------------------
 
-.globl C(D_DrawNonSubdiv)
-C(D_DrawNonSubdiv):
+.globl _D_DrawNonSubdiv
+_D_DrawNonSubdiv:
 	pushl	%ebp				// preserve caller stack frame pointer
-	movl	C(r_affinetridesc)+atd_numtriangles,%ebp
+	movl	_r_affinetridesc+atd_numtriangles,%ebp
 	pushl	%ebx
 	shll	$(mtri_shift),%ebp
 	pushl	%esi				// preserve register variables
-	movl	C(r_affinetridesc)+atd_ptriangles,%esi
+	movl	_r_affinetridesc+atd_ptriangles,%esi
 	pushl	%edi
 
 //	mtriangle_t		*ptri;
@@ -1586,7 +1585,7 @@ LNDLoop:
 //		index0 = pfv + ptri->vertindex[0];
 //		index1 = pfv + ptri->vertindex[1];
 //		index2 = pfv + ptri->vertindex[2];
-	movl	C(r_affinetridesc)+atd_pfinalverts,%edi
+	movl	_r_affinetridesc+atd_pfinalverts,%edi
 	movl	mtri_vertindex+0-mtri_size(%esi,%ebp,1),%ecx
 	shll	$(fv_shift),%ecx
 	movl	mtri_vertindex+4-mtri_size(%esi,%ebp,1),%edx
@@ -1619,8 +1618,8 @@ LNDLoop:
 
 //		}
 
-	movl	%eax,C(d_xdenom)
-	fildl	C(d_xdenom)
+	movl	%eax,_d_xdenom
+	fildl	_d_xdenom
 
 //		r_p0[0] = index0->v[0];		// u
 //		r_p0[1] = index0->v[1];		// v
@@ -1630,16 +1629,16 @@ LNDLoop:
 //		r_p0[5] = index0->v[5];		// iz
 	movl	fv_v+0(%ecx),%eax
 	movl	fv_v+4(%ecx),%esi
-	movl	%eax,C(r_p0)+0
-	movl	%esi,C(r_p0)+4
+	movl	%eax,_r_p0+0
+	movl	%esi,_r_p0+4
 	movl	fv_v+8(%ecx),%eax
 	movl	fv_v+12(%ecx),%esi
-	movl	%eax,C(r_p0)+8
-	movl	%esi,C(r_p0)+12
+	movl	%eax,_r_p0+8
+	movl	%esi,_r_p0+12
 	movl	fv_v+16(%ecx),%eax
 	movl	fv_v+20(%ecx),%esi
-	movl	%eax,C(r_p0)+16
-	movl	%esi,C(r_p0)+20
+	movl	%eax,_r_p0+16
+	movl	%esi,_r_p0+20
 
 	fdivrs	float_1
 
@@ -1651,16 +1650,16 @@ LNDLoop:
 //		r_p1[5] = index1->v[5];
 	movl	fv_v+0(%edx),%eax
 	movl	fv_v+4(%edx),%esi
-	movl	%eax,C(r_p1)+0
-	movl	%esi,C(r_p1)+4
+	movl	%eax,_r_p1+0
+	movl	%esi,_r_p1+4
 	movl	fv_v+8(%edx),%eax
 	movl	fv_v+12(%edx),%esi
-	movl	%eax,C(r_p1)+8
-	movl	%esi,C(r_p1)+12
+	movl	%eax,_r_p1+8
+	movl	%esi,_r_p1+12
 	movl	fv_v+16(%edx),%eax
 	movl	fv_v+20(%edx),%esi
-	movl	%eax,C(r_p1)+16
-	movl	%esi,C(r_p1)+20
+	movl	%eax,_r_p1+16
+	movl	%esi,_r_p1+20
 
 //		r_p2[0] = index2->v[0];
 //		r_p2[1] = index2->v[1];
@@ -1670,17 +1669,17 @@ LNDLoop:
 //		r_p2[5] = index2->v[5];
 	movl	fv_v+0(%ebx),%eax
 	movl	fv_v+4(%ebx),%esi
-	movl	%eax,C(r_p2)+0
-	movl	%esi,C(r_p2)+4
+	movl	%eax,_r_p2+0
+	movl	%esi,_r_p2+4
 	movl	fv_v+8(%ebx),%eax
 	movl	fv_v+12(%ebx),%esi
-	movl	%eax,C(r_p2)+8
-	movl	%esi,C(r_p2)+12
+	movl	%eax,_r_p2+8
+	movl	%esi,_r_p2+12
 	movl	fv_v+16(%ebx),%eax
 	movl	fv_v+20(%ebx),%esi
-	movl	%eax,C(r_p2)+16
-	movl	C(r_affinetridesc)+atd_ptriangles,%edi
-	movl	%esi,C(r_p2)+20
+	movl	%eax,_r_p2+16
+	movl	_r_affinetridesc+atd_ptriangles,%edi
+	movl	%esi,_r_p2+20
 	movl	mtri_facesfront-mtri_size(%edi,%ebp,1),%eax
 
 //		if (!ptri->facesfront)
@@ -1694,38 +1693,38 @@ LNDLoop:
 	movl	fv_flags(%edx),%esi
 	movl	fv_flags(%ebx),%edi
 	testl	$(ALIAS_ONSEAM),%eax
-	movl	C(r_affinetridesc)+atd_seamfixupX16,%eax
+	movl	_r_affinetridesc+atd_seamfixupX16,%eax
 	jz		LOnseamDone0
-	addl	%eax,C(r_p0)+8
+	addl	%eax,_r_p0+8
 LOnseamDone0:
 
 //			if (index1->flags & ALIAS_ONSEAM)
 // 				r_p1[2] += r_affinetridesc.seamfixupX16;
 	testl	$(ALIAS_ONSEAM),%esi
 	jz		LOnseamDone1
-	addl	%eax,C(r_p1)+8
+	addl	%eax,_r_p1+8
 LOnseamDone1:
 
 //			if (index2->flags & ALIAS_ONSEAM)
 //				r_p2[2] += r_affinetridesc.seamfixupX16;
 	testl	$(ALIAS_ONSEAM),%edi
 	jz		LOnseamDone2
-	addl	%eax,C(r_p2)+8
+	addl	%eax,_r_p2+8
 LOnseamDone2:
 
 //		}
 
 LFacesFront:
 
-	fstps	C(d_xdenom)
+	fstps	_d_xdenom
 
 //		D_PolysetSetEdgeTable ();
 //		D_RasterizeAliasPolySmooth ();
-		call	C(D_PolysetSetEdgeTable)
-		call	C(D_RasterizeAliasPolySmooth)
+		call	_D_PolysetSetEdgeTable
+		call	_D_RasterizeAliasPolySmooth
 
 LNextTri:
-		movl	C(r_affinetridesc)+atd_ptriangles,%esi
+		movl	_r_affinetridesc+atd_ptriangles,%esi
 		subl	$16,%ebp
 		jnz		LNDLoop
 //	}

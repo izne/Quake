@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,8 +39,8 @@ Ljmptab:	.long	Lcase0, Lcase1, Lcase2, Lcase3
 // stack parameter offset
 #define	val	4
 
-.globl C(Invert24To16)
-C(Invert24To16):
+.globl _Invert24To16
+_Invert24To16:
 
 	movl	val(%esp),%ecx
 	movl	$0x100,%edx		// 0x10000000000 as dividend
@@ -61,24 +60,24 @@ LOutOfRange:
 #define out	8
 
 	.align 2
-.globl C(TransformVector)
-C(TransformVector):
+.globl _TransformVector
+_TransformVector:
 	movl	in(%esp),%eax
 	movl	out(%esp),%edx
 
 	flds	(%eax)		// in[0]
-	fmuls	C(vright)		// in[0]*vright[0]
+	fmuls	_vright		// in[0]*vright[0]
 	flds	(%eax)		// in[0] | in[0]*vright[0]
-	fmuls	C(vup)		// in[0]*vup[0] | in[0]*vright[0]
+	fmuls	_vup		// in[0]*vup[0] | in[0]*vright[0]
 	flds	(%eax)		// in[0] | in[0]*vup[0] | in[0]*vright[0]
-	fmuls	C(vpn)		// in[0]*vpn[0] | in[0]*vup[0] | in[0]*vright[0]
+	fmuls	_vpn		// in[0]*vpn[0] | in[0]*vup[0] | in[0]*vright[0]
 
 	flds	4(%eax)		// in[1] | ...
-	fmuls	C(vright)+4	// in[1]*vright[1] | ...
+	fmuls	_vright+4	// in[1]*vright[1] | ...
 	flds	4(%eax)		// in[1] | in[1]*vright[1] | ...
-	fmuls	C(vup)+4		// in[1]*vup[1] | in[1]*vright[1] | ...
+	fmuls	_vup+4		// in[1]*vup[1] | in[1]*vright[1] | ...
 	flds	4(%eax)		// in[1] | in[1]*vup[1] | in[1]*vright[1] | ...
-	fmuls	C(vpn)+4		// in[1]*vpn[1] | in[1]*vup[1] | in[1]*vright[1] | ...
+	fmuls	_vpn+4		// in[1]*vpn[1] | in[1]*vup[1] | in[1]*vright[1] | ...
 	fxch	%st(2)		// in[1]*vright[1] | in[1]*vup[1] | in[1]*vpn[1] | ...
 
 	faddp	%st(0),%st(5)	// in[1]*vup[1] | in[1]*vpn[1] | ...
@@ -86,11 +85,11 @@ C(TransformVector):
 	faddp	%st(0),%st(1)	// vpn_accum | vup_accum | vright_accum
 
 	flds	8(%eax)		// in[2] | ...
-	fmuls	C(vright)+8	// in[2]*vright[2] | ...
+	fmuls	_vright+8	// in[2]*vright[2] | ...
 	flds	8(%eax)		// in[2] | in[2]*vright[2] | ...
-	fmuls	C(vup)+8		// in[2]*vup[2] | in[2]*vright[2] | ...
+	fmuls	_vup+8		// in[2]*vup[2] | in[2]*vright[2] | ...
 	flds	8(%eax)		// in[2] | in[2]*vup[2] | in[2]*vright[2] | ...
-	fmuls	C(vpn)+8		// in[2]*vpn[2] | in[2]*vup[2] | in[2]*vright[2] | ...
+	fmuls	_vpn+8		// in[2]*vpn[2] | in[2]*vup[2] | in[2]*vright[2] | ...
 	fxch	%st(2)		// in[2]*vright[2] | in[2]*vup[2] | in[2]*vpn[2] | ...
 
 	faddp	%st(0),%st(5)	// in[2]*vup[2] | in[2]*vpn[2] | ...
@@ -109,8 +108,8 @@ C(TransformVector):
 #define P		4+12
 
 	.align 2
-.globl C(BoxOnPlaneSide)
-C(BoxOnPlaneSide):
+.globl _BoxOnPlaneSide
+_BoxOnPlaneSide:
 	pushl	%ebx
 
 	movl	P(%esp),%edx
@@ -413,6 +412,6 @@ LSetSides:
 
 
 Lerror:
-	call	C(BOPS_Error)
+	call	_BOPS_Error
 
 #endif	// id386

@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -57,8 +56,8 @@ FloatZero:				.long	0
 Float2ToThe31nd:		.long	0x4f000000
 FloatMinus2ToThe31nd:	.long	0xcf000000
 
-.globl	C(r_bmodelactive)
-C(r_bmodelactive):	.long	0
+.globl	_r_bmodelactive
+_r_bmodelactive:	.long	0
 
 #endif	// id386
 

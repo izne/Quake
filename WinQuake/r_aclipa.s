@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,15 +38,15 @@ Ltemp1:	.long	0
 #define pfv1		8+8
 #define out			8+12
 
-.globl C(R_Alias_clip_bottom)
-C(R_Alias_clip_bottom):
+.globl _R_Alias_clip_bottom
+_R_Alias_clip_bottom:
 	pushl	%esi
 	pushl	%edi
 
 	movl	pfv0(%esp),%esi
 	movl	pfv1(%esp),%edi
 
-	movl	C(r_refdef)+rd_aliasvrectbottom,%eax
+	movl	_r_refdef+rd_aliasvrectbottom,%eax
 
 LDoForwardOrBackward:
 
@@ -155,28 +154,28 @@ LDo3Forward:
 	ret
 
 
-.globl C(R_Alias_clip_top)
-C(R_Alias_clip_top):
+.globl _R_Alias_clip_top
+_R_Alias_clip_top:
 	pushl	%esi
 	pushl	%edi
 
 	movl	pfv0(%esp),%esi
 	movl	pfv1(%esp),%edi
 
-	movl	C(r_refdef)+rd_aliasvrect+4,%eax
+	movl	_r_refdef+rd_aliasvrect+4,%eax
 	jmp		LDoForwardOrBackward
 
 
 
-.globl C(R_Alias_clip_right)
-C(R_Alias_clip_right):
+.globl _R_Alias_clip_right
+_R_Alias_clip_right:
 	pushl	%esi
 	pushl	%edi
 
 	movl	pfv0(%esp),%esi
 	movl	pfv1(%esp),%edi
 
-	movl	C(r_refdef)+rd_aliasvrectright,%eax
+	movl	_r_refdef+rd_aliasvrectright,%eax
 
 LRightLeftEntry:
 
@@ -200,15 +199,15 @@ LDoForward2:
 	jmp		LDoForward
 
 
-.globl C(R_Alias_clip_left)
-C(R_Alias_clip_left):
+.globl _R_Alias_clip_left
+_R_Alias_clip_left:
 	pushl	%esi
 	pushl	%edi
 
 	movl	pfv0(%esp),%esi
 	movl	pfv1(%esp),%edi
 
-	movl	C(r_refdef)+rd_aliasvrect+0,%eax
+	movl	_r_refdef+rd_aliasvrect+0,%eax
 	jmp		LRightLeftEntry
 
 

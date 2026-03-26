@@ -1,5 +1,4 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -44,8 +43,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define P	12+4
 
 	.align 4
-.globl C(D_DrawParticle)
-C(D_DrawParticle):
+.globl _D_DrawParticle
+_D_DrawParticle:
 	pushl	%ebp				// preserve caller's stack frame
 	pushl	%edi				// preserve register variables
 	pushl	%ebx
@@ -56,20 +55,20 @@ C(D_DrawParticle):
 
 // transform point
 //	VectorSubtract (p->org, r_origin, local);
-	flds	C(r_origin)
+	flds	_r_origin
 	fsubrs	pt_org(%edi)
 	flds	pt_org+4(%edi)
-	fsubs	C(r_origin)+4
+	fsubs	_r_origin+4
 	flds	pt_org+8(%edi)
-	fsubs	C(r_origin)+8
+	fsubs	_r_origin+8
 	fxch	%st(2)			// local[0] | local[1] | local[2]
 
 //	transformed[2] = DotProduct(local, r_ppn);		
-	flds	C(r_ppn)		// r_ppn[0] | local[0] | local[1] | local[2]
+	flds	_r_ppn		// r_ppn[0] | local[0] | local[1] | local[2]
 	fmul	%st(1),%st(0)	// dot0 | local[0] | local[1] | local[2]
-	flds	C(r_ppn)+4	// r_ppn[1] | dot0 | local[0] | local[1] | local[2]
+	flds	_r_ppn+4	// r_ppn[1] | dot0 | local[0] | local[1] | local[2]
 	fmul	%st(3),%st(0)	// dot1 | dot0 | local[0] | local[1] | local[2]
-	flds	C(r_ppn)+8	// r_ppn[2] | dot1 | dot0 | local[0] |
+	flds	_r_ppn+8	// r_ppn[2] | dot1 | dot0 | local[0] |
 						//  local[1] | local[2]
 	fmul	%st(5),%st(0)	// dot2 | dot1 | dot0 | local[0] | local[1] | local[2]
 	fxch	%st(2)		// dot0 | dot1 | dot2 | local[0] | local[1] | local[2]
@@ -86,9 +85,9 @@ C(D_DrawParticle):
 	fcomps	float_particle_z_clip	// 1/z | local[0] | local[1] | local[2]
 	fxch	%st(3)					// local[2] | local[0] | local[1] | 1/z
 
-	flds	C(r_pup)	// r_pup[0] | local[2] | local[0] | local[1] | 1/z
+	flds	_r_pup	// r_pup[0] | local[2] | local[0] | local[1] | 1/z
 	fmul	%st(2),%st(0)	// dot0 | local[2] | local[0] | local[1] | 1/z 
-	flds	C(r_pup)+4	// r_pup[1] | dot0 | local[2] | local[0] |
+	flds	_r_pup+4	// r_pup[1] | dot0 | local[2] | local[0] |
 						//  local[1] | 1/z 
 
 	fnstsw	%ax
@@ -97,7 +96,7 @@ C(D_DrawParticle):
 
 //	transformed[1] = DotProduct(local, r_pup);
 	fmul	%st(4),%st(0)	// dot1 | dot0 | local[2] | local[0] | local[1] | 1/z 
-	flds	C(r_pup)+8	// r_pup[2] | dot1 | dot0 | local[2] |
+	flds	_r_pup+8	// r_pup[2] | dot1 | dot0 | local[2] |
 						//  local[0] | local[1] | 1/z 
 	fmul	%st(3),%st(0)	// dot2 | dot1 | dot0 | local[2] | local[0] |
 						//  local[1] | 1/z 
@@ -109,11 +108,11 @@ C(D_DrawParticle):
 	fxch	%st(3)		// local[1] | local[2] | local[0] | y | 1/z 
 
 //	transformed[0] = DotProduct(local, r_pright);
-	fmuls	C(r_pright)+4	// dot1 | local[2] | local[0] | y | 1/z
+	fmuls	_r_pright+4	// dot1 | local[2] | local[0] | y | 1/z
 	fxch	%st(2)		// local[0] | local[2] | dot1 | y | 1/z
-	fmuls	C(r_pright)	// dot0 | local[2] | dot1 | y | 1/z
+	fmuls	_r_pright	// dot0 | local[2] | dot1 | y | 1/z
 	fxch	%st(1)		// local[2] | dot0 | dot1 | y | 1/z
-	fmuls	C(r_pright)+8	// dot2 | dot0 | dot1 | y | 1/z
+	fmuls	_r_pright+8	// dot2 | dot0 | dot1 | y | 1/z
 	fxch	%st(2)		// dot1 | dot0 | dot2 | y | 1/z
 	faddp	%st(0),%st(1) // dot1 + dot0 | dot2 | y | 1/z
 
@@ -125,9 +124,9 @@ C(D_DrawParticle):
 	fxch	%st(1)			// x | y/z | 1/z
 	fmul	%st(2),%st(0)	// x/z | y/z | 1/z
 	fxch	%st(1)			// y/z | x/z | 1/z
-	fsubrs	C(ycenter)		// v | x/z | 1/z
+	fsubrs	_ycenter		// v | x/z | 1/z
 	fxch	%st(1)			// x/z | v | 1/z
-	fadds	C(xcenter)		// u | v | 1/z
+	fadds	_xcenter		// u | v | 1/z
 // FIXME: preadjust xcenter and ycenter
 	fxch	%st(1)			// v | u | 1/z
 	fadds	float_point5	// v | u | 1/z
@@ -153,14 +152,14 @@ C(D_DrawParticle):
 // 	continue;
 // }
 
-	movl	C(d_vrectbottom_particle),%ebx
-	movl	C(d_vrectright_particle),%ecx
+	movl	_d_vrectbottom_particle,%ebx
+	movl	_d_vrectright_particle,%ecx
 	cmpl	%ebx,%edx
 	jg		LPop1AndDone
 	cmpl	%ecx,%eax
 	jg		LPop1AndDone
-	movl	C(d_vrecty),%ebx
-	movl	C(d_vrectx),%ecx
+	movl	_d_vrecty,%ebx
+	movl	_d_vrectx,%ecx
 	cmpl	%ebx,%edx
 	jl		LPop1AndDone
 
@@ -171,15 +170,15 @@ C(D_DrawParticle):
 // FIXME: use Terje's fast fp->int trick?
 	fistpl	DP_Color		// 1/z * 0x8000
 
-	movl	C(d_viewbuffer),%ebx
+	movl	_d_viewbuffer,%ebx
 
 	addl	%eax,%ebx
-	movl	C(d_scantable)(,%edx,4),%edi		// point to the pixel
+	movl	_d_scantable)(,%edx,4,%edi		// point to the pixel
 
-	imull	C(d_zrowbytes),%edx		// point to the z pixel
+	imull	_d_zrowbytes,%edx		// point to the z pixel
 
 	leal	(%edx,%eax,2),%edx
-	movl	C(d_pzbuffer),%eax
+	movl	_d_pzbuffer,%eax
 
 	fistpl	izi
 
@@ -189,7 +188,7 @@ C(D_DrawParticle):
 // pix = izi >> d_pix_shift;
 
 	movl	izi,%eax
-	movl	C(d_pix_shift),%ecx
+	movl	_d_pix_shift,%ecx
 	shrl	%cl,%eax
 	movl	izi,%ebp
 
@@ -198,8 +197,8 @@ C(D_DrawParticle):
 // else if (pix > d_pix_max)
 //  	pix = d_pix_max;
 
-	movl	C(d_pix_min),%ebx
-	movl	C(d_pix_max),%ecx
+	movl	_d_pix_min,%ebx
+	movl	_d_pix_max,%ecx
 	cmpl	%ebx,%eax
 	jnl		LTestPixMax
 	movl	%ebx,%eax
@@ -213,7 +212,7 @@ LTestDone:
 
 	movb	DP_Color,%ch
 
-	movl	C(d_y_aspect_shift),%ebx
+	movl	_d_y_aspect_shift,%ebx
 	testl	%ebx,%ebx
 	jnz		LDefault
 
@@ -235,8 +234,8 @@ DP_1x1:
 .globl	DP_2x2
 DP_2x2:
 	pushl	%esi
-	movl	C(screenwidth),%ebx
-	movl	C(d_zrowbytes),%esi
+	movl	_screenwidth,%ebx
+	movl	_d_zrowbytes,%esi
 
 	cmpw	%bp,(%edx)
 	jg		L2x2_1
@@ -266,8 +265,8 @@ L2x2_4:
 .globl	DP_3x3
 DP_3x3:
 	pushl	%esi
-	movl	C(screenwidth),%ebx
-	movl	C(d_zrowbytes),%esi
+	movl	_screenwidth,%ebx
+	movl	_d_zrowbytes,%esi
 
 	cmpw	%bp,(%edx)
 	jg		L3x3_1
@@ -325,8 +324,8 @@ L3x3_9:
 .globl	DP_4x4
 DP_4x4:
 	pushl	%esi
-	movl	C(screenwidth),%ebx
-	movl	C(d_zrowbytes),%esi
+	movl	_screenwidth,%ebx
+	movl	_d_zrowbytes,%esi
 
 	cmpw	%bp,(%edx)
 	jg		L4x4_1
@@ -425,7 +424,7 @@ LDefault:
 
 	movl	%eax,%ebx
 	movl	%eax,DP_Pix
-	movb	C(d_y_aspect_shift),%cl
+	movb	_d_y_aspect_shift,%cl
 	shll	%cl,%ebx
 
 // for ( ; count ; count--, pz += d_zwidth, pdest += screenwidth)
@@ -452,8 +451,8 @@ LGSkip:
 	decl	%eax			// --pix
 	jnz		LGenColLoop
 
-	addl	C(d_zrowbytes),%edx
-	addl	C(screenwidth),%edi
+	addl	_d_zrowbytes,%edx
+	addl	_screenwidth,%edi
 
 	decl	%ebx			// --count
 	jnz		LGenRowLoop
