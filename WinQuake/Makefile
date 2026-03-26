@@ -42,31 +42,46 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     world.c snd_gus.c zone.c in_dos.c &
 	net_main.c net_dos_wc.c	net_vcr.c net_loop.c 
 
+# Assembly source files
+ASMSOURCES = dosasm.s sys_dosa.s math.s snd_mixa.s &
+     d_draw.s d_copy.s d_scana.s d_parta.s d_polysa.s &
+     d_spr8.s d_draw16.s d_scana.s d_polysa.s &
+     d_edgea.s d_varsa.s &
+     r_drawa.s r_aliasa.s r_aclipa.s r_edgea.s r_varsa.s &
+     surf8.s surf16.s worlda.s
+
 # Object files (in build directory)
 COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
-    $(BUILDDIR)\cl_input.obj $(BUILDDIR)\cl_main.obj $(BUILDDIR)\cl_parse.obj &
-    $(BUILDDIR)\cl_tent.obj $(BUILDDIR)\cmd.obj $(BUILDDIR)\common.obj &
-    $(BUILDDIR)\console.obj $(BUILDDIR)\crc.obj $(BUILDDIR)\cvar.obj &
-    $(BUILDDIR)\d_edge.obj $(BUILDDIR)\d_fill.obj $(BUILDDIR)\d_init.obj &
-    $(BUILDDIR)\d_modech.obj $(BUILDDIR)\d_part.obj $(BUILDDIR)\d_polyse.obj &
-    $(BUILDDIR)\d_scan.obj $(BUILDDIR)\d_sky.obj $(BUILDDIR)\d_sprite.obj &
-    $(BUILDDIR)\d_surf.obj $(BUILDDIR)\d_vars.obj $(BUILDDIR)\d_zpoint.obj &
-    $(BUILDDIR)\draw.obj $(BUILDDIR)\host.obj $(BUILDDIR)\host_cmd.obj &
-    $(BUILDDIR)\keys.obj $(BUILDDIR)\mathlib.obj $(BUILDDIR)\menu.obj &
-    $(BUILDDIR)\model.obj $(BUILDDIR)\nonintel.obj $(BUILDDIR)\pr_cmds.obj &
-    $(BUILDDIR)\pr_edict.obj $(BUILDDIR)\pr_exec.obj $(BUILDDIR)\r_aclip.obj &
-    $(BUILDDIR)\r_alias.obj $(BUILDDIR)\r_bsp.obj $(BUILDDIR)\r_draw.obj &
-    $(BUILDDIR)\r_edge.obj $(BUILDDIR)\r_efrag.obj $(BUILDDIR)\r_light.obj &
-    $(BUILDDIR)\r_main.obj $(BUILDDIR)\r_misc.obj $(BUILDDIR)\r_part.obj &
-    $(BUILDDIR)\r_sky.obj $(BUILDDIR)\r_sprite.obj $(BUILDDIR)\r_surf.obj &
-    $(BUILDDIR)\r_vars.obj $(BUILDDIR)\sbar.obj $(BUILDDIR)\screen.obj &
-    $(BUILDDIR)\snd_dma.obj $(BUILDDIR)\snd_dos.obj $(BUILDDIR)\snd_mem.obj &
-    $(BUILDDIR)\snd_mix.obj $(BUILDDIR)\sv_main.obj $(BUILDDIR)\sv_move.obj &
-    $(BUILDDIR)\sv_phys.obj $(BUILDDIR)\sv_user.obj $(BUILDDIR)\sys_dos_wc.obj &
-    $(BUILDDIR)\vid_dos_wc.obj $(BUILDDIR)\vid_vga.obj $(BUILDDIR)\view.obj &
-    $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
-    $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj &
+     $(BUILDDIR)\cl_input.obj $(BUILDDIR)\cl_main.obj $(BUILDDIR)\cl_parse.obj &
+     $(BUILDDIR)\cl_tent.obj $(BUILDDIR)\cmd.obj $(BUILDDIR)\common.obj &
+     $(BUILDDIR)\console.obj $(BUILDDIR)\crc.obj $(BUILDDIR)\cvar.obj &
+     $(BUILDDIR)\d_edge.obj $(BUILDDIR)\d_fill.obj $(BUILDDIR)\d_init.obj &
+     $(BUILDDIR)\d_modech.obj $(BUILDDIR)\d_part.obj $(BUILDDIR)\d_polyse.obj &
+     $(BUILDDIR)\d_scan.obj $(BUILDDIR)\d_sky.obj $(BUILDDIR)\d_sprite.obj &
+     $(BUILDDIR)\d_surf.obj $(BUILDDIR)\d_vars.obj $(BUILDDIR)\d_zpoint.obj &
+     $(BUILDDIR)\draw.obj $(BUILDDIR)\host.obj $(BUILDDIR)\host_cmd.obj &
+     $(BUILDDIR)\keys.obj $(BUILDDIR)\mathlib.obj $(BUILDDIR)\menu.obj &
+     $(BUILDDIR)\model.obj $(BUILDDIR)\nonintel.obj $(BUILDDIR)\pr_cmds.obj &
+     $(BUILDDIR)\pr_edict.obj $(BUILDDIR)\pr_exec.obj $(BUILDDIR)\r_aclip.obj &
+     $(BUILDDIR)\r_alias.obj $(BUILDDIR)\r_bsp.obj $(BUILDDIR)\r_draw.obj &
+     $(BUILDDIR)\r_edge.obj $(BUILDDIR)\r_efrag.obj $(BUILDDIR)\r_light.obj &
+     $(BUILDDIR)\r_main.obj $(BUILDDIR)\r_misc.obj $(BUILDDIR)\r_part.obj &
+     $(BUILDDIR)\r_sky.obj $(BUILDDIR)\r_sprite.obj $(BUILDDIR)\r_surf.obj &
+     $(BUILDDIR)\r_vars.obj $(BUILDDIR)\sbar.obj $(BUILDDIR)\screen.obj &
+     $(BUILDDIR)\snd_dma.obj $(BUILDDIR)\snd_dos.obj $(BUILDDIR)\snd_mem.obj &
+     $(BUILDDIR)\snd_mix.obj $(BUILDDIR)\sv_main.obj $(BUILDDIR)\sv_move.obj &
+     $(BUILDDIR)\sv_phys.obj $(BUILDDIR)\sv_user.obj $(BUILDDIR)\sys_dos_wc.obj &
+     $(BUILDDIR)\vid_dos_wc.obj $(BUILDDIR)\vid_vga.obj $(BUILDDIR)\view.obj &
+     $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
+     $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj &
 	$(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj
+
+# Assembly object files
+AOBJS = $(BUILDDIR)\dosasm.obj $(BUILDDIR)\sys_dosa.obj $(BUILDDIR)\math.obj $(BUILDDIR)\snd_mixa.obj &
+     $(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_copy.obj $(BUILDDIR)\d_scana.obj $(BUILDDIR)\d_parta.obj $(BUILDDIR)\d_polysa.obj &
+     $(BUILDDIR)\d_spr8.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_edgea.obj $(BUILDDIR)\d_varsa.obj &
+     $(BUILDDIR)\r_drawa.obj $(BUILDDIR)\r_aliasa.obj $(BUILDDIR)\r_aclipa.obj $(BUILDDIR)\r_edgea.obj $(BUILDDIR)\r_varsa.obj &
+     $(BUILDDIR)\surf8.obj $(BUILDDIR)\surf16.obj $(BUILDDIR)\worlda.obj
 
 
 # Target executable
@@ -80,12 +95,76 @@ $(BUILDDIR):
 	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
 
 # Main executable
-$(TARGET): $(COBJS)
-	$(LINK) $(LINKFLAGS) name $@ file { $(COBJS) }
+$(TARGET): $(COBJS) $(AOBJS)
+	$(LINK) $(LINKFLAGS) name $@ file { $(COBJS) $(AOBJS) }
 
 # Generic C compilation rule
 {.}.c{$(BUILDDIR)}.obj:
 	$(CC) $(CFLAGS) -fo=$@ $<
+
+# Explicit assembly rules
+$(BUILDDIR)\dosasm.obj: dosasm.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\sys_dosa.obj: sys_dosa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\math.obj: math.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\snd_mixa.obj: snd_mixa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_draw.obj: d_draw.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_copy.obj: d_copy.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_scana.obj: d_scana.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_parta.obj: d_parta.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_polysa.obj: d_polysa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_spr8.obj: d_spr8.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_draw16.obj: d_draw16.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_edgea.obj: d_edgea.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\d_varsa.obj: d_varsa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\r_drawa.obj: r_drawa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\r_aliasa.obj: r_aliasa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\r_aclipa.obj: r_aclipa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\r_edgea.obj: r_edgea.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\r_varsa.obj: r_varsa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\surf8.obj: surf8.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\surf16.obj: surf16.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+$(BUILDDIR)\worlda.obj: worlda.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
 
 # Clean up
 clean: .SYMBOLIC

@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // r_varsa.s
 //
 
-#include "asm_i386.h"
+#include "asm_i386_asm.h"
 #include "quakeasm.h"
 #include "asm_draw.h"
 #include "d_ifacea.h"

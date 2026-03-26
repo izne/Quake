@@ -22,6 +22,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "dosisms.h"
 
+#ifdef __WATCOMC__
+#include <i86.h>
+union REGS dos_regs;
+#define regs dos_regs
+#else
+extern regs_t regs;
+#endif
+
 #define AUX_FLAG_FREELOOK	0x00000001
 
 typedef struct
@@ -126,26 +134,26 @@ void Force_CenterView_f (void)
 
 
 /*
-===========
-IN_StartupMouse
-===========
-*/
+ ===========
+ IN_StartupMouse
+ ===========
+ */
 void IN_StartupMouse (void)
 {
 	if ( COM_CheckParm ("-nomouse") ) 
-		return; 
- 
+		return;  
+  
 // check for mouse
-	regs.x.ax = 0;
+	regs.h.ah = 0;
 	dos_int86(0x33);
-	mouse_avail = regs.x.ax;
+	mouse_avail = regs.h.al;
 	if (!mouse_avail)
 	{
 		Con_Printf ("No mouse found\n");
 		return;
 	}
 	
-	mouse_buttons = regs.x.bx;
+	mouse_buttons = regs.h.bl;
 	if (mouse_buttons > 3)
 		mouse_buttons = 3;
 	Con_Printf("%d-button mouse available\n", mouse_buttons);
@@ -190,19 +198,19 @@ void IN_Shutdown (void)
 
 
 /*
-===========
-IN_Commands
-===========
-*/
+ ===========
+ IN_Commands
+ ===========
+ */
 void IN_Commands (void)
 {
 	int		i;
 
 	if (mouse_avail)
 	{
-		regs.x.ax = 3;		// read buttons
+		regs.h.ah = 3;		// read buttons
 		dos_int86(0x33);
-		mouse_buttonstate = regs.x.bx;
+		mouse_buttonstate = regs.h.bl;
 	
 	// perform button actions
 		for (i=0 ; i<mouse_buttons ; i++)
@@ -269,10 +277,10 @@ void IN_Commands (void)
 
 
 /*
-===========
-IN_Move
-===========
-*/
+ ===========
+ IN_Move
+ ===========
+ */
 void IN_MouseMove (usercmd_t *cmd)
 {
 	int		mx, my;
@@ -280,10 +288,10 @@ void IN_MouseMove (usercmd_t *cmd)
 	if (!mouse_avail)
 		return;
 
-	regs.x.ax = 11;		// read move
+	regs.h.ah = 11;		// read move
 	dos_int86(0x33);
-	mx = (short)regs.x.cx;
-	my = (short)regs.x.dx;
+	mx = (short)regs.h.cl;
+	my = (short)regs.h.dl;
 	
 	if (m_filter.value)
 	{

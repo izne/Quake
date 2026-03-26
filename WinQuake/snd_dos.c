@@ -277,9 +277,12 @@ StartDMA
 void StartDMA(void)
 {
 	int mode;
-	int realaddr;
+	unsigned long physaddr;
 
-	realaddr = ptr2real(dma_buffer);
+// In DOS4GW, dma_buffer is a linear address. For DMA, we need the physical address.
+// DOS4GW handles most of this automatically, but the DMA page registers need
+// the high byte of the physical address.
+	physaddr = (unsigned long)dma_buffer;
 
 // use a high dma channel if specified
 	if (high_dma && dsp_version >= 4)	// 8 bit snd can never use 16 bit dma
@@ -314,14 +317,16 @@ void StartDMA(void)
 	dos_outportb(mode_reg, mode);
 	
 // set address
-	// set page
-	dos_outportb(page_reg[dma], realaddr >> 16);
+// For DMA page register, we need the high byte of physical address
+// DOS4GW handles address translation automatically for most operations
+// but DMA page registers need explicit physical address
+	dos_outportb(page_reg[dma], (physaddr >> 16) & 0xFF);
 
 	if (dma > 3)
 	{	// address is in words
 		dos_outportb(flipflop_reg, 0);		// prepare to send 16-bit value
-		dos_outportb(addr_reg[dma], (realaddr>>1) & 0xff);
-		dos_outportb(addr_reg[dma], (realaddr>>9) & 0xff);
+		dos_outportb(addr_reg[dma], (physaddr>>1) & 0xff);
+		dos_outportb(addr_reg[dma], (physaddr>>9) & 0xff);
 
 		dos_outportb(flipflop_reg, 0);		// prepare to send 16-bit value
 		dos_outportb(count_reg[dma], ((dma_size>>1)-1) & 0xff);
@@ -330,8 +335,8 @@ void StartDMA(void)
 	else
 	{	// address is in bytes
 		dos_outportb(flipflop_reg, 0);		// prepare to send 16-bit value
-		dos_outportb(addr_reg[dma], realaddr & 0xff);
-		dos_outportb(addr_reg[dma], (realaddr>>8) & 0xff);
+		dos_outportb(addr_reg[dma], physaddr & 0xff);
+		dos_outportb(addr_reg[dma], (physaddr>>8) & 0xff);
 
 		dos_outportb(flipflop_reg, 0);		// prepare to send 16-bit value
 		dos_outportb(count_reg[dma], (dma_size-1) & 0xff);
@@ -437,17 +442,20 @@ qboolean BLASTER_Init(void)
 	Cmd_AddCommand("sbinfo", SB_Info_f);
 	size = 4096;
 
-// allocate 8k and get a 4k-aligned buffer from it
-	dma_buffer = dos_getmemory(size*2);
+// allocate aligned buffer for DMA
+// DOS4GW provides linear 32-bit addressing, so we just need alignment
+// Allocate extra space to find an aligned address
+	dma_buffer = (short *)malloc(size*2 + size);
 	if (!dma_buffer)
 	{
 		Con_Printf("Couldn't allocate sound dma buffer");
 		return false;
 	}
 
-	realaddr = ptr2real(dma_buffer);
+// Align buffer to 4K boundary (required for some DMA operations)
+	realaddr = (size_t)dma_buffer;
 	realaddr = (realaddr + size) & ~(size-1);
-	dma_buffer = (short *) real2ptr(realaddr);
+	dma_buffer = (short *)realaddr;
 	dma_size = size;
 
 	memset(dma_buffer, 0, dma_size);

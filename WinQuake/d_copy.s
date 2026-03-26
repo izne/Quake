@@ -3,7 +3,7 @@
 // x86 assembly-language screen copying code.
 //
 
-#include "asm_i386.h"
+#include "asm_i386_asm.h"
 #include "quakeasm.h"
 #include "asm_draw.h"
 

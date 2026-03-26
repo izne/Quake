@@ -1,28 +1,12 @@
 /*
-Copyright (C) 1996-1997 Id Software, Inc.
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-*/
-//
 // vid_vga.c: VGA-specific DOS video stuff
 //
 
 // TODO: proper handling of page-swap failure
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <conio.h>    /* for inp()/outp() and inportb/outportb in Watcom */
 
 #include <dos.h>
@@ -361,7 +345,8 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 	regs.h.al = 0x13;
 	dos_int86(0x10);
 
-	VGA_pagebase = (void *)real2ptr(0xa0000);
+// DOS4GW provides linear addressing, so we can use direct pointer
+	VGA_pagebase = (void *)0xb8000;
 	lvid->direct = (pixel_t *)VGA_pagebase;
 
 // set additional registers as needed

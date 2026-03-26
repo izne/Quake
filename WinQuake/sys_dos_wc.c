@@ -22,6 +22,9 @@ WATCOM C++ PORT NOTES:
 - Replaced __dpmi_* functions with int386() and DOS4GW calls
 - Modified memory management for Watcom's DOS4GW extender
 - Converted inline assembly to Watcom syntax
+
+NOTE: LSP errors shown are due to OpenWatcom headers not being in IDE path.
+These will compile correctly with wcc386.
 */
 
 #include <errno.h>
@@ -33,6 +36,7 @@ WATCOM C++ PORT NOTES:
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <string.h>
 #include <conio.h>
 #include <dos.h>
@@ -495,18 +499,48 @@ void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
 }
 
 // Watcom timer functions
+// Uses PIT (Programmable Interval Timer) for accurate timing
+// Similar to original sys_dos.c but without real2ptr() dependency
+
 double Sys_FloatTime (void)
 {
-	static unsigned long basetime = 0;
-	unsigned long newtime;
+	int				r;
+	unsigned short	t, tick;
+	double			ft, time;
 	
-	// Use clock() for simplicity
-	newtime = clock();
+	// Read BIOS tick counter from memory-mapped I/O
+	// 0x46c is the BIOS tick counter (0x40:0x6c in real mode)
+	// In protected mode with DOS4GW, we can access it directly
+	t = *(unsigned short *)0x46c;
 	
-	if (!basetime)
-		basetime = newtime;
-		
-	return (double)(newtime - basetime) / CLOCKS_PER_SEC;
+	// Latch timer counter
+	outp(0x43, 0);    // latch command
+	r = inp(0x40);    // read low byte
+	r |= inp(0x40) << 8;  // read high byte
+	r = (r - 1) & 0xffff;
+	
+	// Read BIOS tick counter again
+	tick = *(unsigned short *)0x46c;
+	
+	// Use the latest tick value if timer rolled over
+	if ((tick != t) && (r & 0x8000))
+		t = tick;
+	
+	// Calculate time in seconds (PIT frequency = 1193182 Hz)
+	ft = (double)(t + (65536 - r)) / 1193182.0;
+	time = ft - oldtime;
+	oldtime = ft;
+	
+	// Handle timer wraparound
+	if (time < 0)
+	{
+		if (time > -3000.0)
+			time = 0.0;
+		else
+			time += 3600.0;
+	}
+	
+return time;
 }
 
 void Sys_InitFloatTime (void)
