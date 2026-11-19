@@ -202,9 +202,9 @@ void	Host_FindMaxClients (void)
 
 
 /*
-=======================
+=====================
 Host_InitLocal
-======================
+=====================
 */
 void Host_InitLocal (void)
 {
@@ -858,21 +858,33 @@ void Host_Init (quakeparms_t *parms)
 	Chase_Init ();
 	Host_InitVCR (parms);
 	COM_Init (parms->basedir);
+printf("DEBUG: after COM_Init\n");
 	Host_InitLocal ();
+printf("DEBUG: after Host_InitLocal\n");
 	W_LoadWadFile ("gfx.wad");
+printf("DEBUG: after W_LoadWadFile\n");
 	Key_Init ();
+printf("DEBUG: after Key_Init\n");
 	Con_Init ();	
-	M_Init ();	
+printf("DEBUG: after Con_Init\n");
+	M_Init ();
+printf("DEBUG: after M_Init\n");
 	PR_Init ();
+printf("DEBUG: after PR_Init\n");
 	Mod_Init ();
+printf("DEBUG: after Mod_Init\n");
 	NET_Init ();
+printf("DEBUG: after NET_Init\n");
 	SV_Init ();
+printf("DEBUG: after SV_Init\n");
 
 	Con_Printf ("Exe: "__TIME__" "__DATE__"\n");
 	Con_Printf ("%4.1f megabyte heap\n",parms->memsize/ (1024*1024.0));
+printf("DEBUG: before R_InitTextures\n");
 	
-	R_InitTextures ();		// needed even for dedicated servers
- 
+	R_InitTextures ();
+printf("DEBUG: after R_InitTextures\n");
+   
 	if (cls.state != ca_dedicated)
 	{
 		host_basepal = (byte *)COM_LoadHunkFile ("gfx/palette.lmp");
@@ -882,26 +894,25 @@ void Host_Init (quakeparms_t *parms)
 		if (!host_colormap)
 			Sys_Error ("Couldn't load gfx/colormap.lmp");
 
+printf("DEBUG: before IN_Init\n");
 #ifndef _WIN32 // on non win32, mouse comes before video for security reasons
 		IN_Init ();
 #endif
+printf("DEBUG: after IN_Init\n");
+printf("DEBUG: before VID_Init\n");
 		VID_Init (host_basepal);
+printf("DEBUG: after VID_Init\n");
 
 		Draw_Init ();
+printf("DEBUG: after Draw_Init\n");
 		SCR_Init ();
+printf("DEBUG: after SCR_Init\n");
 		R_Init ();
+printf("DEBUG: after R_Init\n");
 #ifndef	_WIN32
-	// on Win32, sound initialization has to come before video initialization, so we
-	// can put up a popup if the sound hardware is in use
-		S_Init ();
-#else
-
-#ifdef	GLQUAKE
-	// FIXME: doesn't use the new one-window approach yet
 		S_Init ();
 #endif
-
-#endif	// _WIN32
+printf("DEBUG: after S_Init\n");
 		CDAudio_Init ();
 		Sbar_Init ();
 		CL_Init ();

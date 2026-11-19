@@ -5,7 +5,8 @@
 
 #include <i86.h>
 
-extern union REGS regs;
+// Define the global regs structure - needed by vid_vga.c, in_dos.c, etc.
+union REGS regs;
 
 int dos_int86(int vec)
 {

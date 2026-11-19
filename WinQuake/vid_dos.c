@@ -304,15 +304,21 @@ void    VID_ShiftPalette (unsigned char *palette)
 
 /*
 ================
-VID_Shutdown
+VID_Shutdown - with error handling
 ================
 */
 void VID_Shutdown (void)
 {
+	int	int86_result;
 
 	regs.h.ah = 0;
 	regs.h.al = 0x3;
-	dos_int86(0x10);
+	int86_result = dos_int86(0x10);
+	
+	if (int86_result < 0)
+	{
+		Con_Printf ("VID_Shutdown: BIOS interrupt timeout\n");
+	}
 
 	vid_testingmode = 0;
 }

@@ -134,10 +134,10 @@ void Force_CenterView_f (void)
 
 
 /*
- ===========
- IN_StartupMouse
- ===========
- */
+===========
+IN_StartupMouse
+===========
+*/
 void IN_StartupMouse (void)
 {
 	if ( COM_CheckParm ("-nomouse") ) 
@@ -452,7 +452,7 @@ WaitJoyButton
 qboolean WaitJoyButton (void) 
 { 
 	int             oldbuttons, buttons; 
- 
+  
 	oldbuttons = 0; 
 	do 
 	{
@@ -472,7 +472,7 @@ qboolean WaitJoyButton (void)
 			oldbuttons = buttons; 
 			continue; 
 		}
-	} while ( !buttons); 
+	} while ( !buttons);
  
 	do 
 	{ 
@@ -499,10 +499,10 @@ qboolean WaitJoyButton (void)
  
  
  
-/* 
-=============== 
+/*
+===========
 IN_StartupJoystick 
-=============== 
+=========== 
 */  
 void IN_StartupJoystick (void) 
 { 
@@ -511,15 +511,18 @@ void IN_StartupJoystick (void)
  	Con_Printf ("\n");
 
 	joy_avail = false; 
-	if ( COM_CheckParm ("-nojoy") ) 
-		return; 
+	
+	// Skip joystick detection by default for DOS4GW compatibility
+	// Use -joy to enable joystick support
+	if (!COM_CheckParm ("-joy")) 
+		return;  
  
 	if (!IN_ReadJoystick ()) 
 	{ 
 		joy_avail = false; 
 		Con_Printf ("joystick not found\n"); 
 		return; 
-	} 
+	}
 
 	Con_Printf ("joystick found\n"); 
  
@@ -547,16 +550,16 @@ void IN_StartupJoystick (void)
 	joy_avail = true; 
 	Con_Printf ("joystick configured.\n"); 
 
- 	Con_Printf ("\n");
+  	Con_Printf ("\n");
 } 
- 
- 
+
+
 /* 
-============================================================================ 
- 
+=========================================================================== 
+
 					EXTERNAL 
- 
-============================================================================ 
+
+=========================================================================== 
 */
 
 

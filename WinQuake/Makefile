@@ -80,8 +80,17 @@ AOBJS = $(BUILDDIR)\dosasm.obj $(BUILDDIR)\sys_dosa.obj
 # Target executable
 TARGET = quake486.exe
 
+# Quake1 deployment directory
+QUAKEDIR = C:\Users\izne\Downloads\_Quake1
+
 # Default target
 all: $(BUILDDIR) $(TARGET)
+
+# Deploy to Quake1 directory
+$(QUAKEDIR)\$(TARGET): $(TARGET)
+	copy /y $(TARGET) $(QUAKEDIR)\$(TARGET)
+
+deploy: $(QUAKEDIR)\$(TARGET)
 
 # Create build directory
 $(BUILDDIR):

@@ -200,13 +200,32 @@ void VGA_Init (void)
 
 /*
 ================
-VGA_WaitVsync
+VGA_WaitVsync - with timeout protection
 ================
 */
 void VGA_WaitVsync (void)
 {
+	volatile int counter;
+	int start_count, end_count;
+	
+	start_count = 0;
+	for (counter = 0; counter < 100000; counter++)
+	{
+	}
+	end_count = counter;
+	
 	while ((inportb (0x3DA) & 0x08) == 0)
-		;
+	{
+		start_count = 0;
+		for (counter = 0; counter < 100000; counter++)
+		{
+		}
+		end_count = counter;
+		if ((end_count - start_count) > 50000)
+		{
+			return;
+		}
+	}
 }
 
 
@@ -325,12 +344,13 @@ qboolean VGA_CheckAdequateMem (int width, int height, int rowbytes,
 
 /*
 ================
-VGA_InitMode
+VGA_InitMode - with timeout/error handling
 ================
 */
 int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 {
 	vextra_t		*pextra;
+	int				int86_result;
 
 	pextra = pcurrentmode->pextradata;
 
@@ -343,10 +363,17 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 // mode 0x13 is the base for all the Mode X-class mode sets
 	regs.h.ah = 0;
 	regs.h.al = 0x13;
-	dos_int86(0x10);
+	int86_result = dos_int86(0x10);
+	
+	if (int86_result < 0)
+	{
+		Con_Printf ("VID_InitMode: BIOS interrupt timeout, falling back to safe mode\n");
+		return -1;
+	}
 
 // DOS4GW provides linear addressing, so we can use direct pointer
-	VGA_pagebase = (void *)0xb8000;
+// Mode 0x13 framebuffer is at 0xA0000 (not 0xB8000 which is text mode)
+	VGA_pagebase = (void *)0xA0000;
 	lvid->direct = (pixel_t *)VGA_pagebase;
 
 // set additional registers as needed

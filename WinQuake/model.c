@@ -1343,7 +1343,7 @@ void * Mod_LoadAliasGroup (void * pin, int *pframeindex, int numv,
 /*
 =================
 Mod_LoadAliasSkin
-=================
+================
 */
 void * Mod_LoadAliasSkin (void * pin, int *pskinindex, int skinsize,
 	aliashdr_t *pheader)
@@ -1351,6 +1351,12 @@ void * Mod_LoadAliasSkin (void * pin, int *pskinindex, int skinsize,
 	int		i;
 	byte	*pskin, *pinskin;
 	unsigned short	*pusskin;
+
+	// Safety check - prevent huge allocations from corrupted model files
+	if (skinsize > 1000000 || (skinsize * r_pixbytes) > 1000000) {
+		Sys_Error ("Mod_LoadAliasSkin: suspicious skinsize=%d r_pixbytes=%d for %s",
+			skinsize, r_pixbytes, loadname);
+	}
 
 	pskin = Hunk_AllocName (skinsize * r_pixbytes, loadname);
 	pinskin = (byte *)pin;
@@ -1468,11 +1474,20 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 // allocate space for a working header, plus all the data except the frames,
 // skin and group info
 //
-	size = 	sizeof (aliashdr_t) + (LittleLong (pinmodel->numframes) - 1) *
-			 sizeof (pheader->frames[0]) +
-			sizeof (mdl_t) +
-			LittleLong (pinmodel->numverts) * sizeof (stvert_t) +
-			LittleLong (pinmodel->numtris) * sizeof (mtriangle_t);
+	{
+		int numverts = LittleLong (pinmodel->numverts);
+		int numtris = LittleLong (pinmodel->numtris);
+		int numframes = LittleLong (pinmodel->numframes);
+		
+		// Safety check - prevent huge allocations from corrupted model files
+		if (numverts > 100000 || numtris > 100000 || numframes > 1000) {
+			Sys_Error ("Mod_LoadAliasModel: suspicious values in %s: verts=%d tris=%d frames=%d",
+				loadname, numverts, numtris, numframes);
+		}
+		
+		size = sizeof (aliashdr_t) + (numframes - 1) * sizeof (pheader->frames[0]) +
+			sizeof (mdl_t) + numverts * sizeof (stvert_t) + numtris * sizeof (mtriangle_t);
+	}
 
 	pheader = Hunk_AllocName (size, loadname);
 	pmodel = (mdl_t *) ((byte *)&pheader[1] +
@@ -1678,6 +1693,13 @@ void * Mod_LoadSpriteFrame (void * pin, mspriteframe_t **ppframe)
 
 	width = LittleLong (pinframe->width);
 	height = LittleLong (pinframe->height);
+	
+	// Safety check - prevent huge allocations
+	if (width > 4096 || height > 4096) {
+		Sys_Error ("Mod_LoadSpriteFrame: invalid sprite size %dx%d for %s", 
+			width, height, loadname);
+	}
+	
 	size = width * height;
 
 	pspriteframe = Hunk_AllocName (sizeof (mspriteframe_t) + size*r_pixbytes,

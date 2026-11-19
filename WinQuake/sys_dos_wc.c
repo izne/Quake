@@ -132,8 +132,10 @@ byte        shiftscantokey[128] =
 // Watcom interrupt handler
 void __interrupt __far TrapKey(void)
 {
-	keybuf[keybuf_head] = inp(0x60);
-	outp(0x20, 0x20);
+	int scancode;
+	scancode = dos_inportb(0x60);
+	dos_outportb(0x20, 0x20);  // Acknowledge interrupt
+	keybuf[keybuf_head] = scancode;
 	keybuf_head = (keybuf_head + 1) & (KEYBUF_SIZE-1);
 }
 
@@ -188,25 +190,12 @@ void *dos_getmaxlockedmem(int *size)
 	int allocsize;
 	int j;
 	
-	if (standard_quake)
-		minmem = MINIMUM_WIN_MEMORY;
-	else
-		minmem = MINIMUM_WIN_MEMORY_LEVELPAK;
+	// Force minimum memory to 8MB - avoid any garbage values
+	allocsize = 8 * 0x100000;  // 8MB
 
-	j = COM_CheckParm("-winmem");
-	if (j)
-	{
-		allocsize = ((int)(Q_atoi(com_argv[j+1]))) * 0x100000;
-		if (allocsize < minmem)
-			allocsize = minmem;
-	}
-	else
-	{
-		allocsize = minmem;
-	}
-
-	// Simple malloc for Watcom - DOS4GW handles memory management
+	printf("DEBUG dos_getmaxlockedmem: FORCED to %d bytes (%d MB)\n", allocsize, allocsize / 0x100000);
 	memory = malloc(allocsize);
+	printf("DEBUG dos_getmaxlockedmem: malloc returned %p\n", memory);
 	if (!memory)
 	{
 		// Try smaller amounts
@@ -499,54 +488,22 @@ void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
 }
 
 // Watcom timer functions
-// Uses PIT (Programmable Interval Timer) for accurate timing
-// Similar to original sys_dos.c but without real2ptr() dependency
+// Simple test timer that returns a fixed delta
+
+static double accumulated_time = 0.0;
 
 double Sys_FloatTime (void)
 {
-	int				r;
-	unsigned short	t, tick;
-	double			ft, time;
-	
-	// Read BIOS tick counter from memory-mapped I/O
-	// 0x46c is the BIOS tick counter (0x40:0x6c in real mode)
-	// In protected mode with DOS4GW, we can access it directly
-	t = *(unsigned short *)0x46c;
-	
-	// Latch timer counter
-	outp(0x43, 0);    // latch command
-	r = inp(0x40);    // read low byte
-	r |= inp(0x40) << 8;  // read high byte
-	r = (r - 1) & 0xffff;
-	
-	// Read BIOS tick counter again
-	tick = *(unsigned short *)0x46c;
-	
-	// Use the latest tick value if timer rolled over
-	if ((tick != t) && (r & 0x8000))
-		t = tick;
-	
-	// Calculate time in seconds (PIT frequency = 1193182 Hz)
-	ft = (double)(t + (65536 - r)) / 1193182.0;
-	time = ft - oldtime;
-	oldtime = ft;
-	
-	// Handle timer wraparound
-	if (time < 0)
-	{
-		if (time > -3000.0)
-			time = 0.0;
-		else
-			time += 3600.0;
-	}
-	
-return time;
+	// Increment by fixed amount each call (simulates ~60 FPS)
+	accumulated_time += 0.016;
+	return accumulated_time;
 }
 
 void Sys_InitFloatTime (void)
 {
 	int		j;
 
+	// Initialize the timer
 	Sys_FloatTime ();
 	oldtime = curtime;
 
@@ -614,6 +571,8 @@ int main (int c, char **v)
 	static	char	cwd[1024];
 
 	printf ("Quake v%4.2f\n", VERSION);
+	printf ("DEBUG: Starting main, calling Sys_GetMemory\n");
+	fflush(stdout);
 	
 	// make sure there's an FPU
 	signal(SIGFPE, Sys_NoFPUExceptionHandler);
@@ -653,6 +612,9 @@ int main (int c, char **v)
 	Host_Init(&quakeparms);
 
 	oldtime = Sys_FloatTime ();
+	printf ("main: Entering main loop\n");
+	fflush(stdout);
+	
 	while (1)
 	{
 		newtime = Sys_FloatTime ();
@@ -661,9 +623,47 @@ int main (int c, char **v)
 		if (cls.state == ca_dedicated && (time<sys_ticrate.value))
 			continue;
 
+		// Limit frame rate to avoid flooding
+		if (time < 0.005)  // Max ~200 FPS
+		{
+			continue;
+		}
+		
+		Sys_PollKeyboard ();
 		Host_Frame (time);
 		oldtime = newtime;
 	}
 }
 
+void Sys_PollKeyboard (void)
+{
+	int k, count;
+	static int last_tail = 0;
+	
+	// Debug: show buffer state
+	if (keybuf_tail != last_tail || keybuf_head != last_tail)
+	{
+		printf ("PollKeyboard: head=%d tail=%d\n", keybuf_head, keybuf_tail);
+		fflush(stdout);
+		last_tail = keybuf_tail;
+	}
+	
+	count = 0;
+	while (keybuf_head != keybuf_tail)
+	{
+		k = keybuf[keybuf_tail++];
+		keybuf_tail &= (KEYBUF_SIZE-1);
+		Key_Event (k, true);
+		Key_Event (k, false);
+		count++;
+	}
+	
+	if (count > 0)
+	{
+		printf ("PollKeyboard: processed %d keys\n", count);
+		fflush(stdout);
+	}
+}
+
 #pragma pack(pop)
+
