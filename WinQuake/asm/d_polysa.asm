@@ -745,15 +745,20 @@ D_PolysetAff8End_:
 ; Self-modifies the 9 displacement fields in D_PolysetDrawSpans8.
 ;=============================================================================
 D_Aff8Patch_ proc near
-        mov     dword ptr [LPatch1-4], eax
-        mov     dword ptr [LPatch2-4], eax
-        mov     dword ptr [LPatch3-4], eax
-        mov     dword ptr [LPatch4-4], eax
-        mov     dword ptr [LPatch5-4], eax
-        mov     dword ptr [LPatch6-4], eax
-        mov     dword ptr [LPatch7-4], eax
-        mov     dword ptr [LPatch8-4], eax
-        mov     dword ptr [LPatch9-4], eax
+        ; NOTE: explicit ds: override is REQUIRED for all 9 writes.  These
+        ; LPatch labels are in the code segment, so a bare [label] makes WASM
+        ; emit a CS: prefix (2E).  Under DOS4GW the code selector is
+        ; execute/read-only (acc CF9B) and a CS write raises GPF 0x0D.  DS is
+        ; the flat RW selector (acc CF93); write the disp32 fields via DS.
+        mov     dword ptr ds:[LPatch1-4], eax
+        mov     dword ptr ds:[LPatch2-4], eax
+        mov     dword ptr ds:[LPatch3-4], eax
+        mov     dword ptr ds:[LPatch4-4], eax
+        mov     dword ptr ds:[LPatch5-4], eax
+        mov     dword ptr ds:[LPatch6-4], eax
+        mov     dword ptr ds:[LPatch7-4], eax
+        mov     dword ptr ds:[LPatch8-4], eax
+        mov     dword ptr ds:[LPatch9-4], eax
         ret
 D_Aff8Patch_ endp
 

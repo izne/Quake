@@ -548,11 +548,16 @@ public R_SurfacePatch_
 R_SurfacePatch_ proc near
         mov     eax, [_surfaces]
         add     eax, st_size
-        mov     dword ptr [LPatch4-4], eax
+        ; NOTE: explicit ds: override is REQUIRED here.  These LPatch labels
+        ; are in the code segment, so a bare [label] makes WASM emit a CS:
+        ; prefix (2E).  Under DOS4GW the code selector is execute/read-only
+        ; (acc CF9B) and a CS write raises GPF 0x0D.  DS is the flat RW
+        ; selector (acc CF93) covering all memory, so we must write via DS.
+        mov     dword ptr ds:[LPatch4-4], eax
         add     eax, st_next
-        mov     dword ptr [LPatch0-4], eax
-        mov     dword ptr [LPatch2-4], eax
-        mov     dword ptr [LPatch3-4], eax
+        mov     dword ptr ds:[LPatch0-4], eax
+        mov     dword ptr ds:[LPatch2-4], eax
+        mov     dword ptr ds:[LPatch3-4], eax
         ret
 R_SurfacePatch_ endp
 
