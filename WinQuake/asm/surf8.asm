@@ -393,6 +393,7 @@ Lv_loop_mip3:
         sar     ebp, 1
         or      ebx, 0F0000000h
         mov     [_lightdeltastep], ebx
+        xor     ebx, ebx                ; high dword must be 0 in loop for addressing
         mov     bl, [esi+1]
         xor     ecx, ecx
         mov     bh, dh
