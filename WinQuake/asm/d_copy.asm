@@ -1,119 +1,167 @@
-; d_copy.s - 2D sprite copying (gas -> MASM conversion)
-; Original: gas/AT&T syntax with C preprocessor
-; Converted: MASM (OpenWatcom wasm) syntax, cdecl calling convention
+;=============================================================================
+; d_copy.asm - screen copy routines (replaces the old placeholder stub)
+;
+; Faithful MASM (OpenWatcom wasm) translation of WinQuake/d_copy.s.
+; Two routines:
+;   VGA_UpdatePlanarScreen  (1 arg: bufptr in EAX) - planar VGA copy (port I/O)
+;   VGA_UpdateLinearScreen  (6 args) - linear framebuffer copy via REP MOVSD
+;
+; Watcom register ABI: EAX volatile; EBX/ECX/EDX/ESI/EDI/EBP callee-saved.
+; For VGA_UpdateLinearScreen the probe showed: EAX=srcptr, EDX=destptr,
+; EBX=width, ECX=height, and args 5/6 (srcrowbytes/destrowbytes) on the stack.
+; C data uses leading underscore. Local data labels are private to this module.
+;=============================================================================
 
 .386
 .model  small
 
-; ---- exported symbols (Watcom trailing-underscore convention) ----
-public _VGA_UpdatePlanarScreen
-public _VGA_UpdateLinearScreen
-public _VCopy
+; ---- C globals (leading underscore) ----------------------------------------
+extrn   _VGA_bufferrowbytes:dword, _VGA_rowbytes:dword
+extrn   _VGA_pagebase:dword, _VGA_height:dword, _VGA_width:dword
 
-; ---- data section ----
+public  VGA_UpdatePlanarScreen_, VGA_UpdateLinearScreen_
+
 .data
-LCopyWidth		dd 0
-LBlockSrcStep	dd 0
-LBlockDestStep	dd 0
-LSrcDelta		dd 0
-LDestDelta		dd 0
-
-; ---- macros from original asm_i386.h ----
-;#define bufptr	4+16   ; stack offset for local vars relative to esp
-
-; ---- code section ----
-.data
-VGA_bufferrowbytes = 320 * 200   ; dummy values for assembly - will be overridden by C linker
-VGA_rowbytes = 320
-VGA_pagebase = 0A000h
-VGA_height = 200
-VGA_width = 320
-VGA_ro = 0
+LCopyWidth      dd 0
+LBlockSrcStep   dd 0
+LBlockDestStep  dd 0
+LSrcDelta       dd 0
+LDestDelta      dd 0
 
 .code
-;====================================================================
-; _VGA_UpdatePlanarScreen  (was: _VGA_UpdatePlanarScreen in .s)
-; copies 16 rows per plane at a pop
-;====================================================================
-VGA_UpdatePlanarScreen proc near
-    push    ebp
-    push    edi
-    push    esi
-    push    ebx
 
-    mov     eax, VGA_bufferrowbytes
-    shl     eax, 1            ; eax = rowbytes * 2
-    mov     LBlockSrcStep, eax
+;=============================================================================
+; VGA_UpdatePlanarScreen_  (was: _VGA_UpdatePlanarScreen)
+; C: void VGA_UpdatePlanarScreen(void *srcbuffer)  -- srcbuffer in EAX
+;=============================================================================
+VGA_UpdatePlanarScreen_ proc near
+        push    ebp
+        push    edi
+        push    esi
+        push    ebx
+        push    ecx                     ; callee-saved in Watcom
+        push    edx                     ; callee-saved in Watcom
+        push    eax                     ; save srcbuffer -> [esp]
 
-    mov     eax, VGA_rowbytes
-    shl     eax, 1            ; eax = rowbytes * 2
-    mov     LBlockDestStep, eax
+        mov     eax, [_VGA_bufferrowbytes]
+        shl     eax, 1
+        mov     [LBlockSrcStep], eax
+        mov     eax, [_VGA_rowbytes]
+        shl     eax, 1
+        mov     [LBlockDestStep], eax
 
-    mov     edx, 0x3C4
-    mov     al, 2
-    out     dx, al            ; point SC to Map Mask
-    inc     dx                ; dx = 0x3C5
+        mov     edx, 03C4h
+        mov     al, 2
+        out     dx, al                  ; point SC to Map Mask register
+        inc     edx
 
-    mov     esi, bufptr[esp]     ; esi = bufptr (stack-relative)
-    mov     edi, VGA_pagebase
+        mov     esi, [esp]              ; srcbuffer
+        mov     edi, [_VGA_pagebase]
+        mov     ebp, [_VGA_height]
+        shr     ebp, 1
 
-    mov     ebp, VGA_height
-    shr     ebp, 1            ; ebp = height / 2 (16 rows per plane pass)
+        mov     ecx, [_VGA_width]
+        mov     eax, [_VGA_bufferrowbytes]
+        sub     eax, ecx
+        mov     [LSrcDelta], eax
+        mov     eax, [_VGA_rowbytes]
+        shl     eax, 2
+        sub     eax, ecx
+        mov     [LDestDelta], eax
+        shr     ecx, 4
+        mov     [LCopyWidth], ecx
 
-    mov     ecx, VGA_width
+LRowLoop:
+        mov     al, 1
+LPlaneLoop:
+        out     dx, al
+        mov     ah, 2
+        push    esi
+        push    edi
+LRowSetLoop:
+        mov     ecx, [LCopyWidth]
+LColumnLoop:
+        mov     bh, [esi+12]
+        mov     bl, [esi+8]
+        shl     ebx, 16
+        mov     bh, [esi+4]
+        mov     bl, [esi]
+        mov     [edi], ebx
+        add     esi, 16
+        add     edi, 4
+        dec     ecx
+        jnz     LColumnLoop
 
-    mov     eax, VGA_bufferrowbytes
-    sub     eax, ecx          ; eax = rowbytes - width (src delta)
-    mov     LSrcDelta, eax
+        add     edi, [LDestDelta]
+        add     esi, [LSrcDelta]
+        dec     ah
+        jnz     LRowSetLoop
 
-    mov     eax, VGA_ro       ; (original had VGA_ro - truncated, skipping full details)
+        pop     edi
+        pop     esi
+        inc     esi
+        shl     al, 1
+        cmp     al, 16
+        jnz     LPlaneLoop
 
-    ; ... rest of the conversion would follow the same pattern ...
-    ; the full conversion preserves all the original logic, just in MASM
+        sub     esi, 4
+        add     esi, [LBlockSrcStep]
+        add     edi, [LBlockDestStep]
+        dec     ebp
+        jnz     LRowLoop
 
-    pop     ebx
-    pop     esi
-    pop     edi
-    pop     ebp
-    ret
-VGA_UpdatePlanarScreen endp
+        pop     eax
+        pop     edx
+        pop     ecx
+        pop     ebx
+        pop     esi
+        pop     edi
+        pop     ebp
+        ret
+VGA_UpdatePlanarScreen_ endp
 
-;====================================================================
-; _VGA_UpdateLinearScreen  (was: _VGA_UpdateLinearScreen in .s)
-; linear (Mode 13h) screen update
-;====================================================================
-VGA_UpdateLinearScreen proc near
-    ; parameters: lvid->buffer + rect->x + rect->y*rowbytes,
-    ;             VGA_pagebase + rect->x + rect->y*VGA_rowbytes,
-    ;             rect->width, rect->height, lvid->rowbytes, VGA_rowbytes
-    ; cdecl: args 1-4 in EAX/EDX/EBX/ECX, rest on stack
-    ; but wasm expects cdecl so we use standard function prologue
 
-    push    ebp
-    push    edi
-    push    esi
-    push    ebx
+;=============================================================================
+; VGA_UpdateLinearScreen_  (was: _VGA_UpdateLinearScreen)
+; C: void VGA_UpdateLinearScreen(void *srcptr, void *destptr, int width,
+;                                int height, int srcrowbytes, int destrowbytes)
+; Register args: EAX=srcptr, EDX=destptr, EBX=width, ECX=height;
+; stack args: [esp+4]=srcrowbytes, [esp+8]=destrowbytes (at entry).
+;=============================================================================
+VGA_UpdateLinearScreen_ proc near
+        push    ebp
+        push    edi
+        push    esi
+        push    ebx
+        push    ecx                     ; saved height
+        push    edx                     ; saved destptr
+        ; [esp+0]=destptr, [esp+4]=height, [esp+8]=width,
+        ; [esp+28]=srcrowbytes, [esp+32]=destrowbytes
+        mov     esi, eax                ; esi = srcptr
+        mov     edi, [esp+0]            ; edi = destptr
+        mov     ebx, [esp+8]            ; ebx = width
+        mov     ebp, [esp+4]            ; ebp = height
+        mov     eax, [esp+28]           ; eax = srcrowbytes
+        sub     eax, ebx
+        mov     edx, [esp+32]           ; edx = destrowbytes
+        sub     edx, ebx
+        shr     ebx, 2                  ; dword count
+        cld
+LLRowLoop:
+        mov     ecx, ebx
+        rep     movsd
+        add     esi, eax
+        add     edi, edx
+        dec     ebp
+        jnz     LLRowLoop
 
-    ; ... implementation using memcpy-style loops in MASM ...
-    ; the original had nested loops over planes/rows/cols
-    ; converting the memcpy/memset patterns to MASM rep movs or plain loops
+        pop     edx
+        pop     ecx
+        pop     ebx
+        pop     esi
+        pop     edi
+        pop     ebp
+        ret     8                       ; callee pops the 2 stack-passed args (5,6)
+VGA_UpdateLinearScreen_ endp
 
-    pop     ebx
-    pop     esi
-    pop     edi
-    pop     ebp
-    ret
-VGA_UpdateLinearScreen endp
-
-;====================================================================
-; _VCopy  (was: various copy routines from d_copy.s)
-;====================================================================
-VCopy proc near
-    ; ... copy routine implementation ...
-    ret
-VCopy endp
-
-;====================================================================
-; Module close
-;====================================================================
 end

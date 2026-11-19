@@ -1,72 +1,78 @@
-; d_scana.s - Scan conversion (gas -> MASM conversion)
-; Original: gas/AT&T syntax with C preprocessor
-; Converted: MASM (OpenWatcom wasm) syntax, cdecl calling convention
-; Note: C global symbols (VGA_*) resolved by linker when ASM386=1
+;=============================================================================
+; d_scana.asm - turbulent texture mapping (replaces the old placeholder stub)
+;
+; Faithful MASM (OpenWatcom wasm) translation of WinQuake/d_scana.s.
+; D_DrawTurbulent8Span is void (all state in C globals with leading underscore).
+; Watcom: EBX/ECX/EDX/ESI/EDI/EBP callee-saved -> all preserved.
+;=============================================================================
 
 .386
 .model  small
 
-; ---- exported symbols (Watcom trailing-underscore convention) ----
-public _VGA_UpdatePlanarScreen
-public _VGA_UpdateLinearScreen
-public _VCopy
+CYCLE           equ 128
+TURB_TEX_SIZE   equ 64
 
-.data
-; C global variables that the renderer asm routines read:
-VGA_bufferrowbytes dd ?
-VGA_rowbytes dd ?
-VGA_pagebase dd ?
-VGA_height dd ?
-VGA_width dd ?
-VGA_ro dd ?
+; ---- C globals (leading underscore) ----------------------------------------
+extrn   _r_turb_s:dword, _r_turb_t:dword, _r_turb_pdest:dword
+extrn   _r_turb_spancount:dword, _r_turb_turb:dword
+extrn   _r_turb_pbase:dword, _r_turb_sstep:dword, _r_turb_tstep:dword
+
+public  D_DrawTurbulent8Span_
 
 .code
-;====================================================================
-; _VGA_UpdatePlanarScreen  (adapted from d_scana.s)
-; scan conversion renders spans through the planar screen path
-;====================================================================
-VGA_UpdatePlanarScreen proc near
-    push    ebp
-    push    edi
-    push    esi
-    push    ebx
 
-    ; scan conversion output through VGA planar write
-    mov     eax, VGA_bufferrowbytes
-    shl     eax, 1
-    mov     LBlockSrcStep, eax
+;=============================================================================
+; D_DrawTurbulent8Span_  (was: _D_DrawTurbulent8Span)  -- void
+;=============================================================================
+D_DrawTurbulent8Span_ proc near
+        push    ebp
+        push    esi
+        push    edi
+        push    ebx
+        push    ecx                     ; callee-saved
+        push    edx                     ; callee-saved
 
-    mov     eax, VGA_rowbytes
-    shl     eax, 1
-    mov     LBlockDestStep, eax
+        mov     esi, [_r_turb_s]
+        mov     ecx, [_r_turb_t]
+        mov     edi, [_r_turb_pdest]
+        mov     ebx, [_r_turb_spancount]
 
-    mov     edx, 0x3C4
-    mov     al, 2
-    out     dx, al
+Llp:
+        mov     eax, ecx
+        mov     edx, esi
+        sar     eax, 16
+        mov     ebp, [_r_turb_turb]
+        sar     edx, 16
+        and     eax, CYCLE-1
+        and     edx, CYCLE-1
+        mov     eax, [ebp+eax*4]
+        mov     edx, [ebp+edx*4]
+        add     eax, esi
+        sar     eax, 16
+        add     edx, ecx
+        sar     edx, 16
+        and     eax, TURB_TEX_SIZE-1
+        and     edx, TURB_TEX_SIZE-1
+        shl     edx, 6
+        mov     ebp, [_r_turb_pbase]
+        add     edx, eax
+        inc     edi
+        add     esi, [_r_turb_sstep]
+        add     ecx, [_r_turb_tstep]
+        mov     dl, [ebp+edx]
+        dec     ebx
+        mov     [edi-1], dl
+        jnz     Llp
 
-    mov     esi, bufptr[esp]
-    mov     edi, VGA_pagebase
+        mov     [_r_turb_pdest], edi
 
-    mov     ebp, VGA_height
-    shr     ebp, 1
-
-    mov     ecx, VGA_width
-    mov     eax, VGA_bufferrowbytes
-    sub     eax, ecx
-    mov     LSrcDelta, eax
-
-    pop     ebx
-    pop     esi
-    pop     edi
-    pop     ebp
-    ret
-VGA_UpdatePlanarScreen endp
-
-;====================================================================
-; _VCopy  (was: scan conversion from d_scana.s)
-;====================================================================
-VCopy proc near
-    ret
-VCopy endp
+        pop     edx
+        pop     ecx
+        pop     ebx
+        pop     edi
+        pop     esi
+        pop     ebp
+        ret
+D_DrawTurbulent8Span_ endp
 
 end
