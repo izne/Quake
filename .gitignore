@@ -1,0 +1,13 @@
+.gitignore
+*.obj
+*.err
+*.exe
+*.map
+*.lst
+*.zip
+build_log*.txt
+stderr.txt
+stdout.txt
+trace.txt
+WinQuake/build/
+_tmp/
