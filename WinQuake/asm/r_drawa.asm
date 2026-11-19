@@ -49,7 +49,7 @@ extrn   _vpn:dword, _vright:dword, _vup:dword
 extrn   _newedges:dword, _removeedges:dword
 extrn   float_1:dword, float_point5:dword
 extrn   fp_1m:dword, fp_1m_minus_1:dword
-extrn   ceil_cw:word, single_cw:word
+extrn   _ceil_cw:word, _single_cw:word
 
 public  R_ClipEdge_
 
@@ -125,7 +125,7 @@ Lcontinue:
         jnz     Lcliploop
 
 Lemit:
-        fldcw   word ptr [ceil_cw]
+        fldcw   word ptr [_ceil_cw]
         cmp     dword ptr [_r_lastvertvalid], 0
         jz      LCalcFirst
         mov     eax, [_r_lzi1]
@@ -155,7 +155,7 @@ LCalcSecond:
         fld     dword ptr [Lv0]
         fxch    st(3)
         fist    dword ptr [_r_ceilv1]
-        fldcw   word ptr [single_cw]
+        fldcw   word ptr [_single_cw]
         fst     dword ptr [_r_v1]
         fxch    st(4)
         fcom    st(1)
