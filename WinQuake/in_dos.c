@@ -22,13 +22,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "dosisms.h"
 
-#ifdef __WATCOMC__
-#include <i86.h>
-union REGS dos_regs;
-#define regs dos_regs
-#else
+// dos_int86() (dos_int86.c) fills the single global "regs", so this file must
+// read that same object -- a private copy would never receive the interrupt
+// results (that is why the mouse was never detected).
 extern regs_t regs;
-#endif
 
 #define AUX_FLAG_FREELOOK	0x00000001
 
