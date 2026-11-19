@@ -12,7 +12,11 @@ BUILDDIR = build
 
 # Base compiler flags: 486 target (-4), 4-byte struct packing, inline FPU,
 # DOS4GW target, full warnings (-wx), quiet (-zq), FAST_INVERSE_SQRT enabled.
-CFLAGS_BASE = -4 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
+# -ei: enumerated types are int (4 bytes), matching the gcc/DJGPP build.
+#      Watcom's default is smallest-enum (1 byte), which shrinks structs like
+#      daliasframetype_t/daliasskintype_t and desynchronises the alias/sprite
+#      model file readers (pframetype + 1 then advances 1 byte instead of 4).
+CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
 
 # Default build keeps debug info (-d2) for crash diagnosis
 CFLAGS = -d2 $(CFLAGS_BASE)
