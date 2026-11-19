@@ -4,7 +4,8 @@
 ; Faithful MASM (OpenWatcom wasm) translation of WinQuake/r_edgea.s.
 ; R_InsertNewEdges(edge_t*,edge_t*), R_RemoveEdges(edge_t*), R_StepActiveU(edge_t*),
 ; R_GenerateSpans(void), R_SurfacePatch(void), R_EdgeCodeStart/End labels.
-; Four self-modifying patch sites (LPatch0/2/3/4) patched by R_SurfacePatch.
+; The four original self-modifying patch sites are replaced by reads of the
+; relocated surf1_ptr data global (see R_SurfacePatch_ below).
 ; EBX/ECX/EDX/ESI/EDI/EBP callee-saved -> preserved.
 ; FPU: gas faddp %st(0),%st(N) -> faddp st(N),st(0); fmul %st(a),%st(0) -> fmul st(0),st(a).
 ;=============================================================================
@@ -52,6 +53,7 @@ Ltemp               dd 0
 float_1_div_0100000h dd 035800000h
 float_point_999     dd 0.999
 float_1_point_001   dd 1.001
+surf1_ptr           dd 0
 
 .code
 public R_EdgeCodeStart_
@@ -278,7 +280,8 @@ Lgs_leading:
         shr     edi, 16-SURF_T_SHIFT
         mov     eax, [_surfaces]
         add     edi, eax
-        mov     esi, [12345678h]
+        mov     eax, [surf1_ptr]
+        mov     esi, [eax]
 LPatch2:
         mov     edx, [edi+st_spanstate]
         mov     eax, [edi+st_insubmodel]
@@ -454,7 +457,8 @@ Lgs_nextedge:
         jnz     Lgs_edgeloop
 
 Lgs_lastspan:
-        mov     esi, [12345678h]
+        mov     eax, [surf1_ptr]
+        mov     esi, [eax]
 LPatch3:
         mov     eax, [_edge_tail_u_shift20]
         xor     ecx, ecx
@@ -472,7 +476,8 @@ LPatch3:
 Lgs_resetspanstate:
         mov     [esi+st_spanstate], ecx
         mov     esi, [esi+st_next]
-        cmp     esi, 012345678h
+        mov     edx, [surf1_ptr]
+        cmp     esi, edx
 LPatch4:
         jnz     Lgs_resetspanstate
         mov     [_span_p], ebp
@@ -491,7 +496,8 @@ TrailingEdge proc near
         jnz     TI_Inverted
         mov     [esi+st_spanstate], eax
         mov     ecx, [esi+st_insubmodel]
-        mov     edx, [12345678h]
+        mov     eax, [surf1_ptr]
+        mov     edx, [eax]
 LPatch0:
         mov     eax, [_r_bmodelactive]
         sub     eax, ecx
@@ -542,22 +548,22 @@ public R_EdgeCodeEnd_
 R_EdgeCodeEnd_:
 
 ;=============================================================================
-; R_SurfacePatch_ - patches the 4 self-modifying displacements
+; R_SurfacePatch_ - records &surfaces[1] in a relocated data global
+;
+; The original Quake patched four code immediates (LPatch0/2/3/4) with this
+; value at runtime (self-modifying code).  Under Watcom/WASM + DOS4GW those
+; direct absolute code writes are NOT relocated at load time, so they land at
+; the wrong linear address; the four loops kept comparing against 0x12345678
+; and spun forever, freezing the game on the first frame.  We instead store
+; the value in a normal (properly relocated) data global, surf1_ptr, and read
+; it directly at the four former patch sites.  Functionally identical, no
+; self-modifying code needed.
 ;=============================================================================
 public R_SurfacePatch_
 R_SurfacePatch_ proc near
         mov     eax, [_surfaces]
         add     eax, st_size
-        ; NOTE: explicit ds: override is REQUIRED here.  These LPatch labels
-        ; are in the code segment, so a bare [label] makes WASM emit a CS:
-        ; prefix (2E).  Under DOS4GW the code selector is execute/read-only
-        ; (acc CF9B) and a CS write raises GPF 0x0D.  DS is the flat RW
-        ; selector (acc CF93) covering all memory, so we must write via DS.
-        mov     dword ptr ds:[LPatch4-4], eax
-        add     eax, st_next
-        mov     dword ptr ds:[LPatch0-4], eax
-        mov     dword ptr ds:[LPatch2-4], eax
-        mov     dword ptr ds:[LPatch3-4], eax
+        mov     [surf1_ptr], eax         ; &surfaces[1]
         ret
 R_SurfacePatch_ endp
 
