@@ -113,14 +113,9 @@ void    VID_Init (unsigned char *palette)
 	Cmd_AddCommand ("vid_describemode", VID_DescribeMode_f);
 	Cmd_AddCommand ("vid_describemodes", VID_DescribeModes_f);
 
-	if (COM_CheckParm ("-nullvid"))
-	{
-		VID_InitNull (palette);
-		vid_menudrawfn = VID_MenuDraw;
-		vid_menukeyfn = VID_MenuKey;
-		return;
-	}
-
+	// set up the mode list; note that later inits link in their modes ahead of
+	// earlier ones, so the standard VGA modes are always first in the list.
+	// This is important because mode 0 must always be VGA mode 0x13
 	VGA_Init ();
 
 	vid_testingmode = 0;
@@ -128,16 +123,7 @@ void    VID_Init (unsigned char *palette)
 	vid_modenum = vid_mode.value;
 
 	if (!VID_SetMode (vid_modenum, palette))
-	{
-		Con_Printf ("Failed to set video mode %d, trying mode 0\n", 
-					vid_modenum);
-		vid_modenum = 0;
-		if (!VID_SetMode (vid_modenum, palette))
-		{
-			Con_Printf ("All video modes failed, using null driver\n");
-			VID_InitNull (palette);
-		}
-	}
+		Sys_Error ("VID_Init: unable to set video mode %d", vid_modenum);
 
 	vid_realmode = vid_modenum;
 	
@@ -213,8 +199,6 @@ int VID_SetMode (int modenum, unsigned char *palette)
 {
 	int		stat;
 	vmode_t	*pnewmode, *poldmode;
-
-	printf("DEBUG VID_SetMode: modenum=%d\n", modenum);
 
 	if ((modenum >= numvidmodes) || (modenum < 0))
 	{
@@ -317,37 +301,15 @@ void    VID_ShiftPalette (unsigned char *palette)
 
 /*
 ================
-VID_Shutdown - with timeout protection
+VID_Shutdown
 ================
 */
 void VID_Shutdown (void)
 {
-	volatile int counter;
-	int start_count, end_count;
-	
-	start_count = 0;
-	for (counter = 0; counter < 100000; counter++)
-	{
-	}
-	end_count = counter;
-	
-	if ((end_count - start_count) > 50000)
-	{
-	}
-	
-	int386(0x10, &regs, &regs);
-	
-	start_count = 0;
-	for (counter = 0; counter < 100000; counter++)
-	{
-	}
-	end_count = counter;
-	
-	if ((end_count - start_count) > 50000)
-	{
-		Con_Printf ("VID_Shutdown: BIOS interrupt timeout\n");
-		return;
-	}
+	// back to 80x25 text mode
+	regs.h.ah = 0;
+	regs.h.al = 0x3;
+	dos_int86(0x10);
 
 	vid_testingmode = 0;
 }
@@ -797,32 +759,3 @@ void VID_MenuKey (int key)
 	}
 }
 
-
-/*
-================
-VID_InitNull - Fallback null video driver when hardware init fails
-================
-*/
-void VID_InitNull (unsigned char *palette)
-{
-	#define	BASEWIDTH	320
-	#define	BASEHEIGHT	200
-
-	static byte	vid_buffer[BASEWIDTH*BASEHEIGHT];
-	static short	zbuffer[BASEWIDTH*BASEHEIGHT];
-	static byte	surfcache[256*1024];
-
-	vid.maxwarpwidth = vid.width = vid.conwidth = BASEWIDTH;
-	vid.maxwarpheight = vid.height = vid.conheight = BASEHEIGHT;
-	vid.aspect = 1.0;
-	vid.numpages = 1;
-	vid.colormap = host_colormap;
-	vid.fullbright = 256 - LittleLong (*((int *)vid.colormap + 2048));
-	vid.buffer = vid.conbuffer = vid_buffer;
-	vid.rowbytes = vid.conrowbytes = BASEWIDTH;
-	
-	d_pzbuffer = zbuffer;
-	D_InitCaches (surfcache, sizeof(surfcache));
-
-	Con_Printf ("Using null video driver\n");
-}

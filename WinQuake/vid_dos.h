@@ -66,7 +66,6 @@ extern int	vid_surfcachesize;
 void VGA_Init (void);
 void VID_InitVESA (void);
 void VID_InitExtra (void);
-void VID_InitNull (unsigned char *palette);
 void VGA_WaitVsync (void);
 void VGA_ClearVideoMem (int planar);
 void VGA_SetPalette(viddef_t *vid, vmode_t *pcurrentmode, unsigned char *pal);

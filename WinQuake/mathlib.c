@@ -444,7 +444,7 @@ float VectorNormalize (vec3_t v)
 
 float VectorNormalize(vec3_t v)
 {
-	float length_squared, inv_length, original_length;
+	float length_squared, inv_length;
 	length_squared = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
 
 	if (length_squared == 0.0f)

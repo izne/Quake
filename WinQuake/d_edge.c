@@ -25,7 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static int	miplevel;
 
 float		scale_for_mip;
+#ifdef __WATCOMC__
+extern int	screenwidth;	/* defined in r_main.c; avoid W1027 redefinition */
+#else
 int			screenwidth;
+#endif
 int			ubasestep, errorterm, erroradjustup, erroradjustdown;
 int			vstartscan;
 

@@ -1,4 +1,4 @@
-/*
+//
 // vid_vga.c: VGA-specific DOS video stuff
 //
 
@@ -200,32 +200,13 @@ void VGA_Init (void)
 
 /*
 ================
-VGA_WaitVsync - with timeout protection
+VGA_WaitVsync
 ================
 */
 void VGA_WaitVsync (void)
 {
-	volatile int counter;
-	int start_count, end_count;
-	
-	start_count = 0;
-	for (counter = 0; counter < 100000; counter++)
-	{
-	}
-	end_count = counter;
-	
 	while ((inportb (0x3DA) & 0x08) == 0)
-	{
-		start_count = 0;
-		for (counter = 0; counter < 100000; counter++)
-		{
-		}
-		end_count = counter;
-		if ((end_count - start_count) > 50000)
-		{
-			return;
-		}
-	}
+		;
 }
 
 
@@ -344,13 +325,12 @@ qboolean VGA_CheckAdequateMem (int width, int height, int rowbytes,
 
 /*
 ================
-VGA_InitMode - with timeout/error handling
+VGA_InitMode
 ================
 */
 int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 {
 	vextra_t		*pextra;
-	int				int86_result;
 
 	pextra = pcurrentmode->pextradata;
 
@@ -363,13 +343,7 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 // mode 0x13 is the base for all the Mode X-class mode sets
 	regs.h.ah = 0;
 	regs.h.al = 0x13;
-	int86_result = dos_int86(0x10);
-	
-	if (int86_result < 0)
-	{
-		Con_Printf ("VID_InitMode: BIOS interrupt timeout, falling back to safe mode\n");
-		return -1;
-	}
+	dos_int86(0x10);
 
 // DOS4GW provides linear addressing, so we can use direct pointer
 // Mode 0x13 framebuffer is at 0xA0000 (not 0xB8000 which is text mode)
@@ -436,6 +410,71 @@ void VGA_SetPalette(viddef_t *lvid, vmode_t *pcurrentmode, unsigned char *pal)
 	dos_outportb(0x3c8, 0);
 	for (i=0 ; i<768 ; i++)
 		outportb(0x3c9, pal[i]>>shiftcomponents);
+}
+
+
+/*
+================
+VGA_UpdateLinearScreen
+
+Copies the given rectangles from the linear draw buffer into VGA memory
+for the linear (mode 13h style) modes.  Replaces the d_copy.s routine
+for the Watcom build.
+================
+*/
+void VGA_UpdateLinearScreen (void *srcptr, void *destptr, int width, int height,
+	int srcrowbytes, int destrowbytes)
+{
+	byte	*src;
+	byte	*dest;
+	int		row;
+
+	src = (byte *)srcptr;
+	dest = (byte *)destptr;
+
+	for (row = 0 ; row < height ; row++)
+	{
+		memcpy (dest, src, width);
+		src += srcrowbytes;
+		dest += destrowbytes;
+	}
+}
+
+
+/*
+================
+VGA_UpdatePlanarScreen
+
+Converts the chunky linear draw buffer to the planar (Mode X) layout:
+plane p, row y, byte i of VGA memory gets src row y, byte 4*i+p.
+Replaces the d_copy.s routine for the Watcom build.
+================
+*/
+void VGA_UpdatePlanarScreen (void *srcbuffer)
+{
+	byte	*src;
+	byte	*dest;
+	byte	*s, *d;
+	int		plane, x, y, i;
+
+	src = (byte *)srcbuffer;
+	dest = (byte *)VGA_pagebase;
+
+// point the sequencer at the Map Mask register
+	outportb (SC_INDEX, MAP_MASK);
+
+	for (plane = 0 ; plane < 4 ; plane++)
+	{
+		outportb (SC_DATA, 1 << plane);
+
+		for (y = 0 ; y < VGA_height ; y++)
+		{
+			s = src + (y * VGA_bufferrowbytes) + plane;
+			d = dest + (y * VGA_rowbytes);
+			for (i = 0, x = 0 ; x < VGA_width ; x += 4, i++)
+				d[i] = s[x];
+		}
+	}
 }
 
 

@@ -66,8 +66,15 @@ extern float	d_sdivzstepu, d_tdivzstepu, d_zistepu;
 extern float	d_sdivzstepv, d_tdivzstepv, d_zistepv;
 extern float	d_sdivzorigin, d_tdivzorigin, d_ziorigin;
 
+#ifdef __WATCOMC__
+/* OpenWatcom treats header tentative definitions as redefinitions (W1027);
+   GCC merges them as common symbols, so keep the original form elsewhere. */
+extern fixed16_t	sadjust, tadjust;
+extern fixed16_t	bbextents, bbextentt;
+#else
 fixed16_t	sadjust, tadjust;
 fixed16_t	bbextents, bbextentt;
+#endif
 
 
 void D_DrawSpans8 (espan_t *pspans);
@@ -80,7 +87,11 @@ void D_DrawSkyScans8 (espan_t *pspan);
 void D_DrawSkyScans16 (espan_t *pspan);
 
 void R_ShowSubDiv (void);
+#ifdef __WATCOMC__
+extern void (*prealspandrawer)(void);
+#else
 void (*prealspandrawer)(void);
+#endif
 surfcache_t	*D_CacheSurface (msurface_t *surface, int miplevel);
 
 extern int D_MipLevelForScale (float scale);

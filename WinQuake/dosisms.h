@@ -88,6 +88,15 @@ int	dos_inportw(int port);
 void dos_outportb(int port, int val);
 void dos_outportw(int port, int val);
 
+#ifdef __WATCOMC__
+/* DJGPP provides these directly; under Watcom they are plain C functions
+   implemented with conio.h inp()/outp() intrinsics (see sys_dos_wc.c) */
+void outportb(int port, int val);
+int  inportb(int port);
+void outportw(int port, int val);
+int  inportw(int port);
+#endif
+
 void dos_irqenable(void);
 void dos_irqdisable(void);
 void dos_registerintr(int intr, void (*handler)(void));

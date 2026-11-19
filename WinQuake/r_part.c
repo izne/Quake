@@ -196,7 +196,7 @@ void R_ClearParticles (void)
 void R_ReadPointFile_f (void)
 {
 	FILE	*f;
-	vec3_t	org;
+	vec3_t	org = {0, 0, 0};
 	int		r;
 	int		c;
 	particle_t	*p;

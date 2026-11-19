@@ -25,15 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <conio.h>
 
 #include "quakedef.h"
+#include "dosisms.h"	// outportb/inportb declarations
 #include "vregset.h"
-
-//#define outportb	loutportb
-
-void loutportb (int port, int val)
-{
-	printf ("port, val: %x %x\n", port, val);
-	getch ();
-}
 
 /*
 ================

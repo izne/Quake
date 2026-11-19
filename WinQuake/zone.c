@@ -406,17 +406,10 @@ void *Hunk_AllocName (int size, char *name)
 
 	if (size < 0)
 		Sys_Error ("Hunk_Alloc: bad size: %i", size);
-		
-	// Safety cap: limit any single allocation to 4MB to prevent crashes
-	// from corrupted model files or other issues
-	if (size > 4*1024*1024) {
-		Con_Printf ("WARNING: Capping huge allocation from %i to 4MB for '%.8s'\n", size, name);
-		size = 4*1024*1024;
-	}
-	
-	// Also prevent suspiciously small values that might indicate bugs
-	if (size < 0) {
-		Sys_Error ("Hunk_Alloc: negative size %i for '%.8s'", size, name);
+
+	// Detect overflow of the size/alignment math below
+	if (size > 0x7ffffff0 - (int)sizeof(hunk_t)) {
+		Sys_Error ("Hunk_Alloc: oversized allocation %i for '%.8s'", size, name);
 	}
 		
 	size = sizeof(hunk_t) + ((size+15)&~15);

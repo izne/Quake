@@ -10,20 +10,18 @@ ASM = wasm
 # Build directory
 BUILDDIR = build
 
-# 486-optimized compiler flags
-CFLAGS = -4 -5 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -d2 -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
+# Base compiler flags: 486 target (-4), 4-byte struct packing, inline FPU,
+# DOS4GW target, full warnings (-wx), quiet (-zq), FAST_INVERSE_SQRT enabled.
+CFLAGS_BASE = -4 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
+
+# Default build keeps debug info (-d2) for crash diagnosis
+CFLAGS = -d2 $(CFLAGS_BASE)
 
 # Assembly flags
 ASMFLAGS = -4 -fp5 -mf -bt=dos
 
-# Linker flags for DPMI extender
-#LINKFLAGS = system dos4g option map option eliminate option stack=256k
+# Linker flags for DOS4GW extender
 LINKFLAGS = system dos4g option map=quake486.map option eliminate option stack=256k
-
-
-
-# Alternative linker flags for CWSDPMI
-LINKFLAGS_CWSDPMI = system option nostub option map option eliminate option stack=256k
 
 # Source files - DOS/WinQuake specific
 CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
@@ -39,12 +37,12 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     sbar.c screen.c snd_dma.c snd_dos.c snd_mem.c &
     snd_mix.c sv_main.c sv_move.c sv_phys.c sv_user.c &
     sys_dos_wc.c vid_dos_wc.c vid_vga.c view.c wad.c &
-    world.c snd_gus.c zone.c in_dos.c &
+    world.c snd_gus.c zone.c in_dos.c vregset.c &
 	net_main.c net_dos_wc.c	net_vcr.c net_loop.c &
 	dos_int86.c 
 
-# Assembly source files - DOS4GW stubs only
-ASMSOURCES = dosasm.s sys_dosa.s
+# Assembly source files - FP control / VGA helpers only
+ASMSOURCES = sys_dosa.s
 
 # Object files (in build directory)
 COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
@@ -71,10 +69,10 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
      $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
      $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj &
  	 $(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj &
- 	 $(BUILDDIR)\dos_int86.obj
+ 	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj
 
-# Assembly object files - only the stub files
-AOBJS = $(BUILDDIR)\dosasm.obj $(BUILDDIR)\sys_dosa.obj
+# Assembly object files
+AOBJS = $(BUILDDIR)\sys_dosa.obj
 
 
 # Target executable
@@ -104,10 +102,7 @@ $(TARGET): $(COBJS) $(AOBJS)
 {.}.c{$(BUILDDIR)}.obj:
 	$(CC) $(CFLAGS) -fo=$@ $<
 
-# Explicit assembly rules - DOS4GW stubs
-$(BUILDDIR)\dosasm.obj: dosasm.s
-	$(ASM) $(ASMFLAGS) -fo=$@ $<
-
+# Explicit assembly rule - FP control / VGA helpers
 $(BUILDDIR)\sys_dosa.obj: sys_dosa.s
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 
@@ -121,16 +116,16 @@ clean: .SYMBOLIC
 # Release build (no debug info, maximum optimization)
 release: .SYMBOLIC clean
 	@echo Building optimized release version...
-	@wmake CFLAGS="-d0 $(CFLAGS)"
+	@wmake CFLAGS="$(CFLAGS_BASE)"
 
 # Debug build
 debug: .SYMBOLIC clean
 	@echo Building debug version...
-	@wmake CFLAGS="-d2 $(CFLAGS)"
+	@wmake CFLAGS="-d2 $(CFLAGS_BASE)"
 
 # Performance profiling build
 profile: .SYMBOLIC
-	@wmake CFLAGS="-d1 $(CFLAGS)"
+	@wmake CFLAGS="-d1 $(CFLAGS_BASE)"
 
 # Help
 help: .SYMBOLIC

@@ -49,7 +49,6 @@ These will compile correctly with wcc386.
 #include "dosisms.h"
 
 // Watcom-specific includes
-#pragma pack(push, 1)
 
 #define MINIMUM_WIN_MEMORY			0x800000
 #define MINIMUM_WIN_MEMORY_LEVELPAK	(MINIMUM_WIN_MEMORY + 0x100000)
@@ -74,13 +73,82 @@ static double		oldtime = 0.0;
 // Remove static from isDedicated - it's declared extern in quakedef.h
 qboolean			isDedicated;
 
-static int			minmem;
-
 float				fptest_temp;
 
 // Watcom: Use linker symbols instead of DJGPP-specific
 extern char _end;
 #define start_of_memory ((int)&_end)
+
+// saved BIOS keyboard vector, restored by Sys_Shutdown
+void (__interrupt __far *old_kb_handler)(void);
+
+//=============================================================================
+// DOS port I/O and memory helpers
+//
+// These used to be no-op stubs in sys_dosa.s (which broke the Sound Blaster
+// detection loops, the joystick code and the keyboard interrupt).  Under
+// DOS4GW the linear address space is identity mapped, so ptr2real/real2ptr
+// are simple casts.
+
+void outportb (int port, int val)
+{
+	outp (port, val);
+}
+
+int inportb (int port)
+{
+	return inp (port);
+}
+
+void outportw (int port, int val)
+{
+	outpw (port, val);
+}
+
+int inportw (int port)
+{
+	return inpw (port);
+}
+
+void dos_outportb (int port, int val)
+{
+	outp (port, val);
+}
+
+int dos_inportb (int port)
+{
+	return inp (port);
+}
+
+void dos_outportw (int port, int val)
+{
+	outpw (port, val);
+}
+
+int dos_inportw (int port)
+{
+	return inpw (port);
+}
+
+unsigned int ptr2real (void *ptr)
+{
+	return (unsigned int)(size_t)ptr;
+}
+
+void *real2ptr (unsigned int real)
+{
+	return (void *)(size_t)real;
+}
+
+void *dos_getmemory (int size)
+{
+	return malloc (size);
+}
+
+void dos_freememory (void *ptr)
+{
+	free (ptr);
+}
 
 //=============================================================================
 
@@ -183,34 +251,36 @@ void Sys_DetectWin95 (void)
 	}
 }
 
-// Simplified memory allocation for Watcom/DOS4GW
+// Find the largest heap we can get from DOS4GW's allocator.  Probing downward
+// mirrors the original DJGPP version (which walked the DPMI free-memory info
+// down in 64K steps); a couple of MB are handed back so the DPMI host and the
+// small mallocs (sound buffers etc.) keep working.
 void *dos_getmaxlockedmem(int *size)
 {
 	void *memory;
 	int allocsize;
-	int j;
-	
-	// Force minimum memory to 8MB - avoid any garbage values
-	allocsize = 8 * 0x100000;  // 8MB
 
-	printf("DEBUG dos_getmaxlockedmem: FORCED to %d bytes (%d MB)\n", allocsize, allocsize / 0x100000);
-	memory = malloc(allocsize);
-	printf("DEBUG dos_getmaxlockedmem: malloc returned %p\n", memory);
-	if (!memory)
+	memory = NULL;
+	for (allocsize = 64 * 0x100000 ; allocsize >= MINIMUM_WIN_MEMORY ;
+		allocsize -= 0x100000)
 	{
-		// Try smaller amounts
-		while (allocsize > 0x400000 && !memory)  // Don't go below 4MB
+		memory = malloc(allocsize);
+		if (memory)
 		{
-			allocsize -= 0x100000;  // Reduce by 1MB
+			free (memory);
+			allocsize -= 2 * 0x100000;
+			if (allocsize < MINIMUM_WIN_MEMORY)
+				allocsize = MINIMUM_WIN_MEMORY;
 			memory = malloc(allocsize);
+			break;
 		}
 	}
-	
+
 	if (!memory)
-		Sys_Error("Can't allocate %d Mb of memory", allocsize / 0x100000);
-	
-	printf("Allocated %d Mb data\n", allocsize / 0x100000);
-	
+		Sys_Error("Can't allocate %d Mb of memory", MINIMUM_WIN_MEMORY / 0x100000);
+
+	fprintf(stderr, "Allocated %d Mb data\n", allocsize / 0x100000);
+
 	*size = allocsize;
 	return memory;
 }
@@ -299,10 +369,11 @@ void Sys_Init(void)
 
 void Sys_Shutdown(void)
 {
-	if (!isDedicated)
+	if (!isDedicated && old_kb_handler)
 	{
-		// Restore keyboard interrupt
-		_dos_setvect(0x09, _dos_getvect(0x09));
+		// restore the BIOS keyboard interrupt replaced in main()
+		_dos_setvect(0x09, old_kb_handler);
+		old_kb_handler = NULL;
 	}
 }
 
@@ -487,16 +558,63 @@ void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
 	(void)length;     // Suppress unused parameter warning
 }
 
-// Watcom timer functions
-// Simple test timer that returns a fixed delta
-
-static double accumulated_time = 0.0;
+// Watcom timer functions - reads the BIOS tick count at 0x46C combined with
+// the latched PIT counter 0, exactly like the original sys_dos.c did.
 
 double Sys_FloatTime (void)
 {
-	// Increment by fixed amount each call (simulates ~60 FPS)
-	accumulated_time += 0.016;
-	return accumulated_time;
+	int				r;
+	unsigned		t, tick;
+	double			ft, time;
+	static int		sametimecount;
+
+	Sys_PushFPCW_SetHigh ();
+
+	t = *(unsigned short*)real2ptr(0x46c) * 65536;
+
+	dos_outportb(0x43, 0); // latch time
+	r = dos_inportb(0x40);
+	r |= dos_inportb(0x40) << 8;
+	r = (r-1) & 0xffff;
+
+	tick = *(unsigned short*)real2ptr(0x46c) * 65536;
+	if ((tick != t) && (r & 0x8000))
+		t = tick;
+
+	ft = (double) (t+(65536-r)) / 1193200.0;
+	time = ft - oldtime;
+	oldtime = ft;
+
+	if (time < 0)
+	{
+		if (time > -3000.0)
+			time = 0.0;
+		else
+			time += 3600.0;
+	}
+
+	curtime += time;
+
+	if (curtime == lastcurtime)
+	{
+		sametimecount++;
+
+		if (sametimecount > 100000)
+		{
+			curtime += 1.0;
+			sametimecount = 0;
+		}
+	}
+	else
+	{
+		sametimecount = 0;
+	}
+
+	lastcurtime = curtime;
+
+	Sys_PopFPCW ();
+
+	return curtime;
 }
 
 void Sys_InitFloatTime (void)
@@ -562,8 +680,8 @@ void Sys_DefaultExceptionHandler(int whatever)
 	(void)whatever;  // Suppress unused parameter warning
 }
 
-// Watcom keyboard interrupt installation
-void (__interrupt __far *old_kb_handler)(void);
+// Watcom keyboard interrupt installation - old_kb_handler is declared near
+// the top of this file and restored by Sys_Shutdown.
 
 int main (int c, char **v)
 {
@@ -571,8 +689,6 @@ int main (int c, char **v)
 	static	char	cwd[1024];
 
 	printf ("Quake v%4.2f\n", VERSION);
-	printf ("DEBUG: Starting main, calling Sys_GetMemory\n");
-	fflush(stdout);
 	
 	// make sure there's an FPU
 	signal(SIGFPE, Sys_NoFPUExceptionHandler);
@@ -612,8 +728,6 @@ int main (int c, char **v)
 	Host_Init(&quakeparms);
 
 	oldtime = Sys_FloatTime ();
-	printf ("main: Entering main loop\n");
-	fflush(stdout);
 	
 	while (1)
 	{
@@ -623,47 +737,8 @@ int main (int c, char **v)
 		if (cls.state == ca_dedicated && (time<sys_ticrate.value))
 			continue;
 
-		// Limit frame rate to avoid flooding
-		if (time < 0.005)  // Max ~200 FPS
-		{
-			continue;
-		}
-		
-		Sys_PollKeyboard ();
 		Host_Frame (time);
 		oldtime = newtime;
 	}
 }
-
-void Sys_PollKeyboard (void)
-{
-	int k, count;
-	static int last_tail = 0;
-	
-	// Debug: show buffer state
-	if (keybuf_tail != last_tail || keybuf_head != last_tail)
-	{
-		printf ("PollKeyboard: head=%d tail=%d\n", keybuf_head, keybuf_tail);
-		fflush(stdout);
-		last_tail = keybuf_tail;
-	}
-	
-	count = 0;
-	while (keybuf_head != keybuf_tail)
-	{
-		k = keybuf[keybuf_tail++];
-		keybuf_tail &= (KEYBUF_SIZE-1);
-		Key_Event (k, true);
-		Key_Event (k, false);
-		count++;
-	}
-	
-	if (count > 0)
-	{
-		printf ("PollKeyboard: processed %d keys\n", count);
-		fflush(stdout);
-	}
-}
-
-#pragma pack(pop)
 
