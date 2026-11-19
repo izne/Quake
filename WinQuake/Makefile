@@ -10,13 +10,17 @@ ASM = wasm
 # Build directory
 BUILDDIR = build
 
+# q_rsqrt feature switch (used by CFLAGS_BASE below).  Build the original
+# sqrt() version for A/B benchmarking with:  wmake -f Makefile QRSQRT=
+QRSQRT = -dUSE_FAST_INVERSE_SQRT
+
 # Base compiler flags: 486 target (-4), 4-byte struct packing, inline FPU,
-# DOS4GW target, full warnings (-wx), quiet (-zq), FAST_INVERSE_SQRT enabled.
+# DOS4GW target, full warnings (-wx), quiet (-zq).
 # -ei: enumerated types are int (4 bytes), matching the gcc/DJGPP build.
 #      Watcom's default is smallest-enum (1 byte), which shrinks structs like
 #      daliasframetype_t/daliasskintype_t and desynchronises the alias/sprite
 #      model file readers (pframetype + 1 then advances 1 byte instead of 4).
-CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
+CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=.
 
 # Default build keeps debug info (-d2) for crash diagnosis
 CFLAGS = -d2 $(CFLAGS_BASE)

@@ -335,6 +335,25 @@ void CL_FinishTimeDemo (void)
 	if (!time)
 		time = 1;
 	Con_Printf ("%i frames %5.1f seconds %5.1f fps\n", frames, time, frames/time);
+
+// Benchmark hook: append the result to timedemo.txt as well, so automated
+// test runs (DOSBox) can read the number back without OCR'ing the screen.
+// The compile timestamp + q_rsqrt state identify which build produced it.
+	{
+		FILE *f = fopen ("timedemo.txt", "a");
+		if (f)
+		{
+			fprintf (f, "%s %s  %s  %i frames %5.1f seconds %5.1f fps\n",
+				__DATE__, __TIME__,
+#ifdef USE_FAST_INVERSE_SQRT
+				"q_rsqrt=on ",
+#else
+				"q_rsqrt=off",
+#endif
+				frames, time, frames/time);
+			fclose (f);
+		}
+	}
 }
 
 /*

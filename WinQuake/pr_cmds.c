@@ -356,13 +356,16 @@ void PF_normalize (void)
 	value1 = G_VECTOR(OFS_PARM0);
 
 	new = value1[0] * value1[0] + value1[1] * value1[1] + value1[2]*value1[2];
-	new = sqrt(new);
-	
+
 	if (new == 0)
 		newvalue[0] = newvalue[1] = newvalue[2] = 0;
 	else
 	{
-		new = 1/new;
+#ifdef USE_FAST_INVERSE_SQRT
+		new = Q_rsqrt(new);					// 1/sqrt(new)
+#else
+		new = 1/sqrt(new);
+#endif
 		newvalue[0] = value1[0] * new;
 		newvalue[1] = value1[1] * new;
 		newvalue[2] = value1[2] * new;
@@ -386,7 +389,11 @@ void PF_vlen (void)
 	value1 = G_VECTOR(OFS_PARM0);
 
 	new = value1[0] * value1[0] + value1[1] * value1[1] + value1[2]*value1[2];
+#ifdef USE_FAST_INVERSE_SQRT
+	new = 1.0f / Q_rsqrt(new);
+#else
 	new = sqrt(new);
+#endif
 	
 	G_FLOAT(OFS_RETURN) = new;
 }
@@ -447,8 +454,11 @@ void PF_vectoangles (void)
 		if (yaw < 0)
 			yaw += 360;
 
-		//forward = sqrt (value1[0]*value1[0] + value1[1]*value1[1]);
+#ifdef USE_FAST_INVERSE_SQRT
 		forward = 1.0f / Q_rsqrt(value1[0] * value1[0] + value1[1] * value1[1]);
+#else
+		forward = sqrt (value1[0]*value1[0] + value1[1]*value1[1]);
+#endif
 		pitch = (int) (atan2(value1[2], forward) * 180 / M_PI);
 		if (pitch < 0)
 			pitch += 360;

@@ -35,27 +35,64 @@ So here are the benefits that we hope to get by using Watcom C:
 - smaller (and faster for 486) binary files
 
 ## 486-optimized compiler flags
+Current flags in `WinQuake/Makefile` (`CFLAGS_BASE`):
 ```
-CFLAGS = -4 -5 -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS -dUSE_FAST_INVERSE_SQRT -i=.
-ASMFLAGS = -4 -fp5 -mf -bt=dos
+CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=.
+QRSQRT      = -dUSE_FAST_INVERSE_SQRT        # A/B switch: wmake QRSQRT=  -> sqrt() build
+ASMFLAGS    = -4 -fp5 -mf -bt=dos
 ```
-
+Flag notes:
+- `-4`  : target 486 instruction set (no Pentium scheduling - we want 486 code)
+- `-ei` : enumerated types are 4 bytes, matching the original gcc/DJGPP build.
+          Watcom's default 1-byte enums shrink structs like `daliasframetype_t`
+          and crash the alias/skin model readers (fixed in `fbc81c4`)
+- `-otexan -fp5 -fpi87` : aggressive opts + inline x87 (FPU present on all 486)
+- `-zp4` : 4-byte struct packing, same as gcc
+- (removed: `-5` Pentium targeting - wrong CPU for this project)
 
 ## Testing
-Results of the experiment:
-- Stock 1996 Quake 1.06: 14.4 FPS
-- Stock 1996 Quake 1.06 + noaudio/nonetwor: ?? FPS
-- GPL Quake - DJGPP/CWSDPMI: ?? FPS
-- GPL Quake - Watcom C/DOS4GW: ?? FPS
-- GPL Quake + Q_rsqrt() + DJGPP/CWSDPMI: ?? FPS
-- GPL Quake + Q_rsqrt() + Watcom C/DOS4GW: ?? FPS
-- GPL Quake + Q_rsqrt() + noaudio/nonetwork + DJGPP/CWSDPMI: ?? FPS
-- GPL Quake + Q_rsqrt() + noaudio/nonetwork + Watcom C/DOS4GW: ?? FPS
+
+### Benchmark methodology
+- DOSBox 0.74-3, `cputype=486`, `core=dynamic`, **`cycles=fixed 80000`**, `machine=svga_s3`, `memsize=16`
+- `+timedemo demo1` started from the command line, **969 frames**
+- Results read from `timedemo.txt` (hook in `CL_FinishTimeDemo`) / `id1/qconsole.log` (`-condebug` for stock)
+- Runs are near-deterministic at fixed cycles - identical builds repeat byte-identically
+- Harness: `tests/bench/bench.ps1` (see `tests/bench/README.md`)
+
+### Results (DOSBox, cycles=fixed 80000, demo1, 969 frames)
+| Build | sound | `-nosound` |
+|---|---|---|
+| **Stock Quake 1.06** (DJGPP/CWSDPMI, `QUAKE.EXE`) | **25.7 fps** | **26.2 fps** |
+| GPL Quake - Watcom C/DOS4GW, q_rsqrt=**off** | 13.9 fps | 14.2 fps |
+| GPL Quake - Watcom C/DOS4GW, q_rsqrt=**on**  | 13.8 / 13.9 fps | 14.2 fps |
+
+Reference (real hardware, the goal post): **stock Quake 1.06 = 14.4 FPS** on the
+Am5x86-X5 @ 160 MHz test machine.
+
+### Honest caveats
+1. **q_rsqrt shows no gain in DOSBox.** DOSBox recompiles x87 onto the host FPU,
+   so `fsqrt`/`fdiv` are artificially cheap and cannot model a real 486
+   (where a single `fdiv` costs ~70-90 cycles). The microbenchmark
+   `tests/sq7test.c` even reports q_rsqrt as **1.29x slower** in emulation
+   (LibC sqrt 0.831 s vs Q_rsqrt 1.077 s, 1e6 iterations) - disassembly shows
+   Watcom inlines `fsqrt` + 3 `fdiv` for the sqrt path. **Real-HW validation on
+   the Am5x86 is still pending** - that is the number that matters.
+2. **The 1.85x stock-vs-Watcom gap is the renderer assembly.** Stock Quake runs
+   the hand-written x87 renderer asm (`id386=1`); our Watcom build falls back to
+   the C renderer (`id386` is 0 because Watcom does not define `__i386__`).
+   The `.s` files are gas/AT&T + C preprocessor syntax - OpenWatcom's `wasm`
+   cannot assemble them (empirically confirmed; `ASSEMBLY_COMPATIBILITY.md`'s
+   "all compatible" claim is wrong). Converting them (gas -> MASM, `-ecc`
+   cdecl calling convention) is the single biggest remaining perf lever and is
+   the planned next step.
+3. Rows for DJGPP/GPL/q_rsqrt-on-DJGPP variants are still `??` (not yet built).
 
 ## Modular testing
-**tests/sq7test.c** - compares Q_rsqrt() with LibC's sqrt() using dnamic data generation and DOS protected mode.
+**tests/sq7test.c** - compares Q_rsqrt() with LibC's sqrt() using dynamic data generation and DOS protected mode.
 
 Compile with the following optimizations
 ```
-wcl386 -q -d0 -4r -ol -fp3 -lm -l=dos4g sq7test.c
+wcl386 -q -d0 -4s -4r -fp5 -mf -ol -ol+ -op -ot -oh -ox -lm -l=dos4g sq7test.c
 ```
+
+**tests/bench/bench.ps1** - automated DOSBox timedemo harness (see `tests/bench/README.md`).

@@ -374,7 +374,11 @@ float FastLength2D(float x, float y)
 	float length_squared = x * x + y * y;
 	if (length_squared < 1e-6f)
 		return 0.0f;
+#ifdef USE_FAST_INVERSE_SQRT
 	return 1.0f / Q_rsqrt(length_squared);
+#else
+	return sqrt(length_squared);
+#endif
 }
 
 float Q_rsqrt( float number )
@@ -417,7 +421,11 @@ vec_t Length(vec3_t v)
 	if (length_squared == 0.0f)
 		return 0.0f;
 
+#ifdef USE_FAST_INVERSE_SQRT
 	return 1.0f / Q_rsqrt(length_squared);
+#else
+	return sqrt(length_squared);
+#endif
 }
 
 
@@ -453,7 +461,11 @@ float VectorNormalize(vec3_t v)
 		return 0.0f;
 	}
 
+#ifdef USE_FAST_INVERSE_SQRT
 	inv_length = Q_rsqrt(length_squared);
+#else
+	inv_length = 1.0f / sqrt(length_squared);
+#endif
 
 	v[0] *= inv_length;
 	v[1] *= inv_length;

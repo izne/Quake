@@ -125,7 +125,11 @@ float V_CalcBob (void)
 // (don't count Z, or jumping messes it up)
 
 	//bob = sqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1]) * cl_bob.value;
-	bob = (1.0f / Q_rsqrt(cl.velocity[0] * cl.velocity[0] + cl.velocity[1])) * cl.velocity[1];
+#ifdef USE_FAST_INVERSE_SQRT
+	bob = (1.0f / Q_rsqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1])) * cl_bob.value;
+#else
+	bob = sqrt(cl.velocity[0]*cl.velocity[0] + cl.velocity[1]*cl.velocity[1]) * cl_bob.value;
+#endif
 	
 //Con_Printf ("speed: %5.1f\n", Length(cl.velocity));
 	bob = bob*0.3 + bob*0.7*sin(cycle);
