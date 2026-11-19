@@ -14,6 +14,12 @@ BUILDDIR = build
 # sqrt() version for A/B benchmarking with:  wmake -f Makefile QRSQRT=
 QRSQRT = -dUSE_FAST_INVERSE_SQRT
 
+# ASM386 switch: when set to 1, link the 18 converted MASM renderer modules
+# (asm\*.asm) and define -DASM386=1 so quakedef.h enables id386=1, which
+# compiles out the C renderer fallbacks in favour of the assembly routines.
+#   Build with ASM: wmake -f Makefile all ASM386=1
+ASM386 =
+
 # Base compiler flags: 486 target (-4), 4-byte struct packing, inline FPU,
 # DOS4GW target, full warnings (-wx), quiet (-zq).
 # -ei: enumerated types are int (4 bytes), matching the gcc/DJGPP build.
@@ -24,6 +30,12 @@ CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRS
 
 # Default build keeps debug info (-d2) for crash diagnosis
 CFLAGS = -d2 $(CFLAGS_BASE)
+
+# When ASM386=1, enable id386 in the C sources and select the asm objects.
+# (Watcom Make 1.9 uses !ifeq / !else / !endif; plain '=' reassignment.)
+!ifeq ASM386 1
+CFLAGS = $(CFLAGS) -DASM386=1
+!endif
 
 # Assembly flags
 ASMFLAGS = -4 -fp5 -mf -bt=dos
@@ -82,6 +94,23 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
 # Assembly object files
 AOBJS = $(BUILDDIR)\sys_dosa.obj
 
+# ASM386 renderer objects - the 18 converted MASM modules from asm\*.asm.
+# These are included in the link only when ASM386=1 (see ALL_OBJS below).
+ASM386_OBJS = $(BUILDDIR)\worlda.obj $(BUILDDIR)\r_varsa.obj $(BUILDDIR)\d_varsa.obj &
+	$(BUILDDIR)\snd_mixa.obj $(BUILDDIR)\math.obj $(BUILDDIR)\d_polysa.obj &
+	$(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_copy.obj &
+	$(BUILDDIR)\d_scana.obj $(BUILDDIR)\r_aclipa.obj $(BUILDDIR)\r_aliasa.obj &
+	$(BUILDDIR)\surf16.obj $(BUILDDIR)\d_parta.obj $(BUILDDIR)\surf8.obj &
+	$(BUILDDIR)\d_spr8.obj $(BUILDDIR)\r_drawa.obj $(BUILDDIR)\r_edgea.obj
+
+# The full object list fed to the linker: C objects + base asm + (optionally)
+# the 18 ASM386 renderer objects.
+!ifeq ASM386 1
+ALL_OBJS = $(COBJS) $(AOBJS) $(ASM386_OBJS)
+!else
+ALL_OBJS = $(COBJS) $(AOBJS)
+!endif
+
 
 # Target executable
 TARGET = quake486.exe
@@ -103,8 +132,8 @@ $(BUILDDIR):
 	@if not exist $(BUILDDIR) mkdir $(BUILDDIR)
 
 # Main executable
-$(TARGET): $(COBJS) $(AOBJS)
-	$(LINK) $(LINKFLAGS) name $@ file { $(COBJS) $(AOBJS) }
+$(TARGET): $(ALL_OBJS)
+	$(LINK) $(LINKFLAGS) name $@ file { $(ALL_OBJS) }
 
 # Generic C compilation rule
 {.}.c{$(BUILDDIR)}.obj:
@@ -112,6 +141,44 @@ $(TARGET): $(COBJS) $(AOBJS)
 
 # Explicit assembly rule - FP control / VGA helpers
 $(BUILDDIR)\sys_dosa.obj: sys_dosa.s
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+
+# Explicit assembly rules - 18 converted MASM renderer modules (asm\*.asm)
+$(BUILDDIR)\worlda.obj:   asm\worlda.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\r_varsa.obj:  asm\r_varsa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_varsa.obj:  asm\d_varsa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\snd_mixa.obj: asm\snd_mixa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\math.obj:     asm\math.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_polysa.obj: asm\d_polysa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_draw.obj:   asm\d_draw.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_draw16.obj: asm\d_draw16.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_copy.obj:   asm\d_copy.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_scana.obj:  asm\d_scana.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\r_aclipa.obj: asm\r_aclipa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\r_aliasa.obj: asm\r_aliasa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\surf16.obj:   asm\surf16.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_parta.obj:  asm\d_parta.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\surf8.obj:    asm\surf8.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_spr8.obj:   asm\d_spr8.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\r_drawa.obj:  asm\r_drawa.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\r_edgea.obj:  asm\r_edgea.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 
 # Clean up
