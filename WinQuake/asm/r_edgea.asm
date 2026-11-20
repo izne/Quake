@@ -334,7 +334,7 @@ Lsortloop:
         fxch    st(1)
         fadd    dword ptr [edi+st_d_ziorigin]
         fld     dword ptr [esi+st_d_zistepu]
-        fmul    st(3), st(0)
+        fmul    st(0), st(3)
         fxch    st(1)
         faddp   st(2), st(0)
         fld     dword ptr [_fv]
@@ -386,7 +386,7 @@ Lzcheck_for_newtop:
         fxch    st(1)
         fadd    dword ptr [edi+st_d_ziorigin]
         fld     dword ptr [esi+st_d_zistepu]
-        fmul    st(3), st(0)
+        fmul    st(0), st(3)
         fxch    st(1)
         faddp   st(2), st(0)
         fld     dword ptr [_fv]

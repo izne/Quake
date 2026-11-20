@@ -526,14 +526,14 @@ LClampReentry5:
         sub     ebx, [t]
         add     eax, eax                     ; 15.17 format
         add     ebx, ebx
-        imul    eax, [reciprocal_table_16+ecx*4-8]   ; sstep
+        imul    dword ptr [reciprocal_table_16+ecx*4-8]   ; EDX:EAX = sstep
         mov     ebp, edx
         mov     eax, ebx
-        imul    eax, [reciprocal_table_16+ecx*4-8]   ; tstep
+        imul    dword ptr [reciprocal_table_16+ecx*4-8]   ; EDX:EAX = tstep
 
 LSetEntryvec:
         mov     ebx, [entryvec_table_16+ecx*4]
-        mov     edx, eax
+        mov     eax, edx
         mov     [jumptemp], ebx
         mov     ecx, ebp
         sar     edx, 16                      ; tstep >>= 16

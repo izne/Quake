@@ -136,7 +136,7 @@ LSpanLoop:
         fld     st(0)
         fmul    dword ptr [fp_64kx64k]
         fxch    st(1)
-        fdivr   st(0), st(2)             ; 1/z | z*64k | t/z | s/z
+        fdiv    st(2), st(0)             ; 1/z | z*64k | t/z | s/z
         fxch    st(1)
         fistp   dword ptr [izi]          ; 0.32 fixed-point 1/z
         mov     ebp, [izi]

@@ -77,6 +77,7 @@ R_ClipEdge_ proc near
         push    edi
         push    ebx
         push    ecx                     ; callee-saved, clobbered
+        push    edx                     ; callee-saved under Watcom ABI
         push    ebp                     ; callee-saved, clobbered
         mov     [Lstack], esp           ; for clearing stack later
         ; Args on entry: EAX=pv0, EDX=pv1, EBX=clip (all already in place)
@@ -304,6 +305,7 @@ LSetRemove:
 Ldone:
         mov     esp, [Lstack]
         pop     ebp
+        pop     edx
         pop     ecx
         pop     ebx
         pop     edi
@@ -330,7 +332,7 @@ LC1:
         ; only point1 clipped: f = d0/(d0-d1)
         fld     dword ptr [Ld0]
         fld     dword ptr [Ld1]
-        fsubr   st(1), st(0)
+        fsubr   st(0), st(1)
         mov     dword ptr [_cacheoffset], 07FFFFFFFh
         fdivp   st(1), st(0)
         sub     esp, mv_size
@@ -381,7 +383,7 @@ LC3:
         mov     dword ptr [_r_lastvertvalid], 0
         fld     dword ptr [Ld0]
         fld     dword ptr [Ld1]
-        fsubr   st(1), st(0)
+        fsubr   st(0), st(1)
         mov     dword ptr [_cacheoffset], 07FFFFFFFh
         fdivp   st(1), st(0)
         sub     esp, mv_size
@@ -393,9 +395,9 @@ LC3:
         fsub    dword ptr [esi+mv_position+0]
         mov     eax, [ebx+cp_leftedge]
         test    al, al
-        fmul    st(3), st(0)
+        fmul    st(0), st(3)
         fxch    st(1)
-        fmul    st(3), st(0)
+        fmul    st(0), st(3)
         fxch    st(2)
         fmulp   st(3), st(0)
         fadd    dword ptr [esi+mv_position+0]
@@ -477,7 +479,7 @@ LNoClip:
         fdivr   dword ptr [float_1]
         fxch    st(1)
         fld     dword ptr [_xscale]
-        fmul    st(2), st(0)
+        fmul    st(0), st(2)
         fmulp   st(1), st(0)
         fadd    dword ptr [_xcenter]
         fcom    dword ptr [_r_refdef+rd_fvrectx_adj]
