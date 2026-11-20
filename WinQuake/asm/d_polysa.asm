@@ -54,6 +54,7 @@ fv_size          equ 32
 mtri_facesfront  equ 0
 mtri_vertindex   equ 4
 mtri_size        equ 16
+mtri_shift       equ 4
 
 ; affinetridesc_t offsets
 atd_skinwidth    equ 8
@@ -115,6 +116,7 @@ public  D_PolysetDrawFinalVerts_
 public  D_DrawNonSubdiv_
 
 .data
+
     ALIGN 4
 p10_minus_p20       dd 0.0
 p01_minus_p21       dd 0.0
@@ -475,10 +477,14 @@ D_PolysetAff8Start_:
 ; C: void D_PolysetDrawSpans8(spanpackage_t *pspanpackage) -- arg in EAX
 ;=============================================================================
 D_PolysetDrawSpans8_ proc near
+        ; Watcom __watcall callee-saved: EBX/ECX/EDX/ESI/EDI/EBP.  ECX and
+        ; EDX are used as scratch in this routine, so they must be preserved.
         push    eax                     ; save pspanpackage arg
+        push    ecx
+        push    edx
         push    esi
         push    ebx
-        mov     esi, [esp+8]            ; pspanpackage (saved EAX)
+        mov     esi, [esp+16]           ; pspanpackage (saved EAX)
         mov     ecx, [_r_zistepx]
 
         push    ebp
@@ -712,6 +718,8 @@ LNextSpanESISet:
         pop     ebp
         pop     ebx
         pop     esi
+        pop     edx
+        pop     ecx
         pop     eax
         ret
 
@@ -745,20 +753,35 @@ D_PolysetAff8End_:
 ; Self-modifies the 9 displacement fields in D_PolysetDrawSpans8.
 ;=============================================================================
 D_Aff8Patch_ proc near
-        ; NOTE: explicit ds: override is REQUIRED for all 9 writes.  These
-        ; LPatch labels are in the code segment, so a bare [label] makes WASM
-        ; emit a CS: prefix (2E).  Under DOS4GW the code selector is
-        ; execute/read-only (acc CF9B) and a CS write raises GPF 0x0D.  DS is
-        ; the flat RW selector (acc CF93); write the disp32 fields via DS.
-        mov     dword ptr ds:[LPatch1-4], eax
-        mov     dword ptr ds:[LPatch2-4], eax
-        mov     dword ptr ds:[LPatch3-4], eax
-        mov     dword ptr ds:[LPatch4-4], eax
-        mov     dword ptr ds:[LPatch5-4], eax
-        mov     dword ptr ds:[LPatch6-4], eax
-        mov     dword ptr ds:[LPatch7-4], eax
-        mov     dword ptr ds:[LPatch8-4], eax
-        mov     dword ptr ds:[LPatch9-4], eax
+        ; LPatchN are CODE labels.  A direct ds:[label] operand makes WASM emit
+        ; an A3 moffs instruction whose disp32 gets a "Frame: DGROUP" OMF
+        ; fixup.  Under DOS4GW that value is NOT the flat address of the code
+        ; label, so the write lands in the wrong place and the placeholders
+        ; stay at 0x12345678.  Loading the address with "offset label" emits
+        ; a "Frame: TARGET" fixup, which is the correct flat address; the
+        ; subsequent [reg] write uses DS (flat RW) and patches the code.
+        ; ECX is callee-saved in the Watcom register ABI, so preserve it.
+        push    ecx
+        mov     ecx, eax                ; ecx = pcolormap
+        mov     eax, offset LPatch1-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch2-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch3-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch4-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch5-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch6-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch7-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch8-4
+        mov     [eax], ecx
+        mov     eax, offset LPatch9-4
+        mov     [eax], ecx
+        pop     ecx
         ret
 D_Aff8Patch_ endp
 
@@ -1080,7 +1103,7 @@ D_DrawNonSubdiv_ proc near
         push    edx                     ; callee-saved
 
         mov     ebp, [_r_affinetridesc+atd_numtriangles]
-        shl     ebp, mtri_size/2*2      ; mtri_shift = 4
+        shl     ebp, mtri_shift         ; mtri_shift = 4
         mov     esi, [_r_affinetridesc+atd_ptriangles]
 
 LNDLoop:
