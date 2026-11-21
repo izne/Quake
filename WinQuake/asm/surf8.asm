@@ -17,6 +17,7 @@ extrn   _pbasesource:dword, _r_lightwidth:dword, _lightright:dword
 extrn   _lightrightstep:dword, _lightdeltastep:dword, _lightdelta:dword
 extrn   _sourcetstep:dword, _surfrowbytes:dword, _r_sourcemax:dword
 extrn   _r_stepback:dword, _colormap:dword
+extrn   C_Mip3_:near
 
 public  R_Surf8Start_, R_Surf8End_, R_Surf8Patch_
 public  R_DrawSurfaceBlock8_mip0_, R_DrawSurfaceBlock8_mip1_
@@ -374,6 +375,7 @@ R_DrawSurfaceBlock8_mip2_ endp
         ALIGN 4
 public R_DrawSurfaceBlock8_mip3_
 R_DrawSurfaceBlock8_mip3_ proc near
+        jmp     C_Mip3_
         push    ebp
         push    edi
         push    esi

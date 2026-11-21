@@ -68,7 +68,7 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     sys_dos_wc.c vid_dos_wc.c vid_vga.c view.c wad.c &
     world.c snd_gus.c zone.c in_dos.c vregset.c qtrace.c &
 	net_main.c net_dos_wc.c	net_vcr.c net_loop.c &
-	dos_int86.c 
+	dos_int86.c c_mips.c
 
 # Assembly source files - FP control / VGA helpers only
 ASMSOURCES = sys_dosa.s
@@ -98,7 +98,7 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
      $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
      $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj $(BUILDDIR)\qtrace.obj &
  	 $(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj &
- 	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj
+ 	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj $(BUILDDIR)\c_mips.obj
 
 # Assembly object files
 AOBJS = $(BUILDDIR)\sys_dosa.obj
