@@ -31,7 +31,7 @@ QTRACE =
 #      Watcom's default is smallest-enum (1 byte), which shrinks structs like
 #      daliasframetype_t/daliasskintype_t and desynchronises the alias/sprite
 #      model file readers (pframetype + 1 then advances 1 byte instead of 4).
-CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=.
+CFLAGS_BASE = -4r -ei -otabehiklmnr -zp4 -fp3 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=. -zri -zdl
 
 # Release build: no debug info (-d2), matching the validated all-ASM build.
 CFLAGS = $(CFLAGS_BASE)
