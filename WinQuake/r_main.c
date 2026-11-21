@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "r_local.h"
+#include "qtrace.h"
 
 //define	PASSAGES
 
@@ -534,6 +535,8 @@ void R_DrawEntitiesOnList (void)
 	vec3_t		dist;
 	float		add;
 
+	QTRACE (QT_ENTITIES_ENTER, cl_numvisedicts);
+
 	if (!r_drawentities.value)
 		return;
 
@@ -596,6 +599,8 @@ void R_DrawEntitiesOnList (void)
 			break;
 		}
 	}
+
+	QTRACE (QT_ENTITIES_EXIT, cl_numvisedicts);
 }
 
 /*
@@ -612,6 +617,8 @@ void R_DrawViewModel (void)
 	vec3_t		dist;
 	float		add;
 	dlight_t	*dl;
+
+	QTRACE (QT_VIEWMODEL_ENTER, r_amodels_drawn);
 	
 	if (!r_drawviewmodel.value || r_fov_greater_than_90)
 		return;
@@ -669,6 +676,8 @@ void R_DrawViewModel (void)
 #endif
 
 	R_AliasDrawModel (&r_viewlighting);
+
+	QTRACE (QT_VIEWMODEL_EXIT, r_amodels_drawn);
 }
 
 
@@ -880,6 +889,8 @@ void R_EdgeDrawing (void)
 	surf_t	lsurfs[NUMSTACKSURFACES +
 				((CACHE_SIZE - 1) / sizeof(surf_t)) + 1];
 
+	QTRACE (QT_EDGE_DRAW_ENTER, r_framecount);
+
 	if (auxedges)
 	{
 		r_edges = auxedges;
@@ -940,6 +951,8 @@ void R_EdgeDrawing (void)
 	
 	if (!(r_drawpolys | r_drawculledpolys))
 		R_ScanEdges ();
+
+	QTRACE (QT_EDGE_DRAW_EXIT, r_framecount);
 }
 
 
@@ -960,6 +973,7 @@ void R_RenderView_ (void)
 		r_time1 = Sys_FloatTime ();
 
 	R_SetupFrame ();
+	QTRACE (QT_SETUP_FRAME_DONE, r_framecount);
 
 #ifdef PASSAGES
 SetVisibilityByPassages ();
@@ -987,11 +1001,15 @@ SetVisibilityByPassages ();
 
 	if (!r_dspeeds.value)
 	{
+		QTRACE (QT_POST_EDGE_UNLOCK, r_framecount);
 		VID_UnlockBuffer ();
+		QTRACE (QT_POST_EDGE_UNLOCK_DONE, r_framecount);
 		S_ExtraUpdate ();	// don't let sound get messed up if going slow
+		QTRACE (QT_POST_EDGE_SOUND_DONE, r_framecount);
 		VID_LockBuffer ();
+		QTRACE (QT_POST_EDGE_LOCK_DONE, r_framecount);
 	}
-	
+
 	if (r_dspeeds.value)
 	{
 		se_time2 = Sys_FloatTime ();
@@ -1014,7 +1032,9 @@ SetVisibilityByPassages ();
 		dp_time1 = Sys_FloatTime ();
 	}
 
+	QTRACE (QT_PARTICLES_ENTER, r_framecount);
 	R_DrawParticles ();
+	QTRACE (QT_PARTICLES_EXIT, r_framecount);
 
 	if (r_dspeeds.value)
 		dp_time2 = Sys_FloatTime ();
@@ -1050,6 +1070,8 @@ void R_RenderView (void)
 {
 	int		dummy;
 	int		delta;
+
+	QTRACE (QT_VIEW_ENTER, r_framecount);
 	
 	delta = (byte *)&dummy - r_stack_start;
 	if (delta < -10000 || delta > 10000)
@@ -1065,6 +1087,8 @@ void R_RenderView (void)
 		Sys_Error ("Globals are missaligned");
 
 	R_RenderView_ ();
+
+	QTRACE (QT_VIEW_EXIT, r_framecount);
 }
 
 /*

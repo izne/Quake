@@ -218,7 +218,7 @@ LPushBackLoop:
         mov     ebx, [ecx+et_u]
         cmp     eax, ebx
         jl      LPushBackLoop
-        mov     ecx, edi
+        mov     edi, ecx
 LPushBackFound:
         mov     ebx, [edi+et_next]
         mov     [edx+et_prev], edi

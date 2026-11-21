@@ -38,6 +38,7 @@ WATCOM C++ PORT NOTES:
 #include "d_local.h"
 #include "dosisms.h"
 #include "vid_dos.h"
+#include "qtrace.h"
 
 int			vid_modenum;
 vmode_t		*pcurrentmode = NULL;
@@ -321,6 +322,8 @@ VID_Update
 */
 void    VID_Update (vrect_t *rects)
 {
+	QTRACE (QT_VID_UPDATE_ENTER, r_framecount);
+
 	if (firstupdate && _vid_default_mode.value)
 	{
 		if(_vid_default_mode.value >= numvidmodes)
@@ -330,7 +333,9 @@ void    VID_Update (vrect_t *rects)
 		Cvar_SetValue ("vid_mode", _vid_default_mode.value);
 	}
 
+	QTRACE (QT_VID_SWAP_ENTER, r_framecount);
 	(*pcurrentmode->swapbuffers)(&vid, pcurrentmode, rects);
+	QTRACE (QT_VID_SWAP_EXIT, r_framecount);
 
 	if (!nomodecheck)
 	{
@@ -354,6 +359,9 @@ void    VID_Update (vrect_t *rects)
 			}
 		}
 	}
+
+	QTRACE (QT_VID_MODECHECK_DONE, r_framecount);
+	QTRACE (QT_VID_UPDATE_EXIT, r_framecount);
 }
 
 /*

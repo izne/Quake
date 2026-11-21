@@ -1,11 +1,10 @@
 ;=============================================================================
-; d_spr8.asm - 8-bpp transparent span drawing (replaces the old stub)
+; d_spr8.asm - 8-bpp transparent span drawing with z buffering
 ;
 ; Faithful MASM (OpenWatcom wasm) translation of WinQuake/d_spr8.s.
 ; D_SpriteDrawSpans(sspan_t *pspans) - 1 arg in EAX. Plus Spr8Entry2_8..8.
-; Similar to D_DrawSpans8 but with z-buffer writes + transparency test.
 ; EBX/ECX/EDX/ESI/EDI/EBP callee-saved -> preserved.
-; FPU mapping identical to verified d_draw.asm.
+; FPU operand order follows the verified d_draw.asm mapping.
 ;=============================================================================
 
 .386
@@ -13,14 +12,10 @@
 
 TRANSPARENT_COLOR equ 255
 
-espan_t_u   equ 0
-espan_t_v   equ 4
-espan_t_count equ 8
-espan_t_pnext equ 12
-sspan_t_u   equ 0
-sspan_t_v   equ 4
+sspan_t_u     equ 0
+sspan_t_v     equ 4
 sspan_t_count equ 8
-sspan_t_size equ 12
+sspan_t_size  equ 12
 
 extrn   _d_sdivzstepu:dword, _d_tdivzstepu:dword, _d_zistepu:dword
 extrn   _d_sdivzstepv:dword, _d_tdivzstepv:dword, _d_zistepv:dword
@@ -42,11 +37,10 @@ public  D_SpriteDrawSpans_
 public  Spr8Entry2_8, Spr8Entry3_8, Spr8Entry4_8, Spr8Entry5_8
 public  Spr8Entry6_8, Spr8Entry7_8, Spr8Entry8_8
 
-; ---- transparent pixel + stepping macro -----------------------------------
-; Draws one pixel at [edi+off] with z at [ecx+zoff] if z-test passes and texel
-; is non-transparent, then steps izi/tfrac/sfrac and advances esi.
+; ---- one pixel in the 8-wide non-last segment -------------------------------
+; z compare/store uses a 16-bit word at [ecx+zoff]; colour store at [edi+off].
 SPRPIX macro off, zoff
-        cmp     bp, [ecx+zoff]
+        cmp     bp, word ptr [ecx+zoff]
         jl      Lskip&off
         mov     al, [esi]
         cmp     al, TRANSPARENT_COLOR
@@ -55,15 +49,33 @@ SPRPIX macro off, zoff
         mov     [edi+off], al
 Lskip&off:
         add     ebp, [izistep]
-        adc     dword ptr [izi], 0
+        adc     ebp, 0
         add     edx, [tstep]
         sbb     eax, eax
         add     ebx, [sstep]
         adc     esi, [advancetable+4+eax*4]
 endm
 
-.data
-        ALIGN 4
+; ---- one pixel in the variable-length last segment -------------------------
+SPR8PIX macro pos, zoff
+        cmp     bp, word ptr [ecx+zoff]
+        jl      LskipE&pos
+        mov     al, [esi]
+        cmp     al, TRANSPARENT_COLOR
+        jz      LskipE&pos
+        mov     [ecx+zoff], bp
+        mov     [edi+pos], al
+LskipE&pos:
+endm
+
+SPR8STEP macro
+        add     ebp, [izistep]
+        adc     ebp, 0
+        add     edx, [tstep]
+        sbb     eax, eax
+        add     ebx, [sstep]
+        adc     esi, [advancetable+4+eax*4]
+endm
 
 .code
 
@@ -77,6 +89,7 @@ D_SpriteDrawSpans_ proc near
         push    ebx
         push    ecx
         push    edx
+
         mov     ebx, eax                ; first span descriptor
         mov     [pspantemp], ebx
 
@@ -262,8 +275,8 @@ LNotLastSegment:
         mov     eax, [snext]
         mov     edx, [tnext]
         sub     ecx, 8
+        mov     [counttemp], ecx
         mov     ebp, [_sadjust]
-        push    ecx
         mov     ecx, [_tadjust]
         add     ebp, eax
         add     ecx, edx
@@ -313,6 +326,18 @@ LIsZero:
         SPRPIX 6, 12
         SPRPIX 7, 14
 
+; advance pointers and save the stepped fractions/z for the next segment
+        add     edi, 8
+        add     ecx, 16
+        mov     [tfracf], edx
+        mov     eax, [snext]
+        mov     [sfracf], ebx
+        mov     ebx, [tnext]
+        mov     [s], eax
+        mov     [t], ebx
+        mov     [pz], ecx
+        mov     [izi], ebp
+
 ; start FDIV for next segment
         mov     ecx, [counttemp]
         cmp     ecx, 8
@@ -348,12 +373,6 @@ LSetupNotLast2:
         fdiv    st(0), st(1)
 LFDIVInFlight2:
         mov     [counttemp], ecx
-        add     edi, 8
-        mov     eax, [snext]
-        mov     [tfracf], edx
-        mov     ebx, [tnext]
-        mov     [s], eax
-        mov     [t], ebx
         mov     ecx, [counttemp]
         cmp     ecx, 8
         ja      LNotLastSegment
@@ -369,10 +388,9 @@ LLastSegment:
         fxch    st(1)
         fistp   dword ptr [snext]
         fistp   dword ptr [tnext]
-        mov     al, [esi]
+
         mov     ebp, [_sadjust]
         mov     edx, [_tadjust]
-        mov     [edi], al
         add     ebp, [snext]
         add     edx, [tnext]
         mov     ebx, [_bbextents]
@@ -392,19 +410,27 @@ LClampReentry5:
         je      LOnlyOneStep
         sub     ebp, [s]
         sub     edx, [t]
-        add     ebp, ebp
+        add     ebp, ebp                ; 15.17 format
         add     edx, edx
-        imul    ebp, [reciprocal_table+ecx*4-8]
-        mov     eax, edx
-        imul    eax, [reciprocal_table+ecx*4-8]
+        mov     ebx, edx                ; save doubled tdelta
+        mov     eax, ebp
+        imul    dword ptr [reciprocal_table+ecx*4-8]   ; EDX:EAX = sstep
+        mov     ebp, edx                ; high 32 bits = fractional sstep
+        mov     eax, ebx
+        imul    dword ptr [reciprocal_table+ecx*4-8]   ; EDX:EAX = tstep
+        mov     eax, edx                ; high 32 bits = fractional tstep
         jmp     LSetEntryvec
 LNoSteps:
-        mov     al, [esi]
+        mov     ecx, [pz]
         sub     edi, 7
+        sub     ecx, 14
         jmp     LEndSpan
 LOnlyOneStep:
         sub     ebp, [s]
         sub     edx, [t]
+        mov     eax, edx                ; tdelta (full 16.16 step)
+        jmp     LSetEntryvec
+
 LSetEntryvec:
         mov     ebx, [spr8entryvec_table+ecx*4]
         mov     edx, eax
@@ -423,108 +449,67 @@ LSetEntryvec:
         shl     eax, 16
         mov     [advancetable], edx
         mov     [tstep], eax
+        mov     [sstep], ebp
         mov     edx, ecx
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
+        mov     ecx, [pz]
+        mov     ebp, [izi]
         jmp     dword ptr [jumptemp]
 
 ; ---- Spr8 Entry points (transparent, 2-8 pixels) ---------------------------
-; Each entry handles a partial last segment; the pixel store checks z + transp.
-SPR8P macro pos, zpos
-        cmp     bp, [ecx+zpos]
-        jl      Sk&pos
-        mov     al, [esi]
-        cmp     al, TRANSPARENT_COLOR
-        jz      Sk&pos
-        mov     [ecx+zpos], bp
-        mov     [edi+pos], al
-Sk&pos:
-endm
-SPR8STEP macro
-        add     ebp, [izistep]
-        adc     dword ptr [izi], 0
-        add     edx, [tstep]
-        sbb     eax, eax
-        add     ebx, [sstep]
-        adc     esi, [advancetable+4+eax*4]
-endm
-
+; The hardwired offsets in the fall-through chain are relative to EDI/ECX.
+; Each entry shifts those bases so its first drawn pixel lands on pixel 0.
 Spr8Entry2_8:
         sub     edi, 6
+        sub     ecx, 12
+        mov     al, [esi]
         jmp     LLEntry2_8
 Spr8Entry3_8:
         sub     edi, 5
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
+        sub     ecx, 10
         jmp     LLEntry3_8
 Spr8Entry4_8:
         sub     edi, 4
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
-        add     edx, [tstep]
+        sub     ecx, 8
         jmp     LLEntry4_8
 Spr8Entry5_8:
         sub     edi, 3
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
-        add     edx, [tstep]
+        sub     ecx, 6
         jmp     LLEntry5_8
 Spr8Entry6_8:
         sub     edi, 2
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
-        add     edx, [tstep]
+        sub     ecx, 4
         jmp     LLEntry6_8
 Spr8Entry7_8:
         dec     edi
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
-        add     edx, [tstep]
+        sub     ecx, 2
         jmp     LLEntry7_8
 Spr8Entry8_8:
-        add     edx, eax
-        sbb     ecx, ecx
-        add     ebx, ebp
-        adc     esi, [advancetable+4+ecx*4]
-
-; fall-through chain of 8 transparent pixels (matches d_spr8.s Entry8_8)
-        SPR8P 0,0
+        SPR8PIX 0, 0
         SPR8STEP
-        SPR8P 1,2
-        SPR8STEP
-        SPR8P 2,4
-        SPR8STEP
-        SPR8P 3,6
-        SPR8STEP
-        SPR8P 4,8
-        SPR8STEP
-        SPR8P 5,10
-        SPR8STEP
-        SPR8P 6,12
-        SPR8STEP
-        SPR8P 7,14
 LLEntry7_8:
+        SPR8PIX 1, 2
+        SPR8STEP
 LLEntry6_8:
+        SPR8PIX 2, 4
+        SPR8STEP
 LLEntry5_8:
+        SPR8PIX 3, 6
+        SPR8STEP
 LLEntry4_8:
+        SPR8PIX 4, 8
+        SPR8STEP
 LLEntry3_8:
+        SPR8PIX 5, 10
+        SPR8STEP
 LLEntry2_8:
+        SPR8PIX 6, 12
+        SPR8STEP
 LEndSpan:
+        SPR8PIX 7, 14
         fstp    st(0)
         fstp    st(0)
         fstp    st(0)
+
 LNextSpan:
         mov     ebx, [pspantemp]
         add     ebx, sspan_t_size

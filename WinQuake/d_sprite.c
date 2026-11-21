@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "d_local.h"
+#include "qtrace.h"
 
 static int		sprite_height;
 static int		minindex, maxindex;
@@ -437,6 +438,8 @@ void D_DrawSprite (void)
 	D_SpriteCalculateGradients ();
 	D_SpriteScanLeftEdge ();
 	D_SpriteScanRightEdge ();
+	QTRACE (QT_SPRITE_ENTER, (int)sprite_spans);
 	D_SpriteDrawSpans (sprite_spans);
+	QTRACE (QT_SPRITE_EXIT, (int)sprite_spans);
 }
 

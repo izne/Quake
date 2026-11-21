@@ -54,16 +54,19 @@ Ltemp   dd 0            ; scratch for 'd' sign test in LSetSides
 ;=============================================================================
 Invert24To16_ proc near
         push    ecx                 ; ECX is callee-saved in Watcom
+        push    edx                 ; EDX is callee-saved in Watcom
         mov     ecx, eax            ; ecx = val
         mov     edx, 0100h          ; 0x100 (high word of 2^40 dividend)
         cmp     ecx, edx
         jle     short LOutOfRange
         xor     eax, eax            ; eax = 0 (low word of dividend)
         div     ecx                 ; edx:eax / ecx -> eax = quotient
+        pop     edx
         pop     ecx
         ret
 LOutOfRange:
         mov     eax, 0FFFFFFFFh
+        pop     edx
         pop     ecx
         ret
 Invert24To16_ endp

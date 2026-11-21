@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 #include "d_local.h"
+#include "qtrace.h"
 
 // TODO: put in span spilling to shrink list size
 // !!! if this is changed, it must be changed in d_polysa.s too !!!
@@ -92,6 +93,10 @@ int						d_lightbasestep, d_pdestbasestep, d_ptexbasestep;
 int						d_sfracbasestep, d_tfracbasestep;
 int						d_ziextrastep, d_zibasestep;
 int						d_pzextrastep, d_pzbasestep;
+
+#ifdef QTRACE_ENABLE
+static int				qtrace_poly_debug;
+#endif
 
 typedef struct {
 	int		quotient;
@@ -682,6 +687,116 @@ void D_PolysetDrawSpans8 (spanpackage_t *pspanpackage)
 D_PolysetFillSpans8
 ================
 */
+#ifdef QTRACE_ENABLE
+/*
+===============
+D_PolysetDrawSpans8_Trace
+
+Trace-only guarded copy of the ASM span loop.  It uses the same globals as
+the C reference implementation and only runs when qtrace_poly_debug is set.
+===============
+*/
+static void D_PolysetDrawSpans8_Trace (spanpackage_t *pspanpackage, int which)
+{
+	int		lcount;
+	int		span_index = 0;
+	int		inner_guard;
+	byte	*lpdest;
+	byte	*lptex;
+	int		lsfrac, ltfrac;
+	int		llight;
+	int		lzi;
+	short	*lpz;
+
+	QTRACE (QT_POLY_TRACE_ENTER, (int)pspanpackage);
+	QTRACE (QT_POLY_TRACE_PRE, which);
+	QTRACE (QT_POLY_TRACE_PRE, (int)(d_pedgespanpackage - a_spans));
+	QTRACE (QT_POLY_TRACE_PRE, d_aspancount);
+	QTRACE (QT_POLY_TRACE_PRE, pspanpackage->count);
+
+	while (1)
+	{
+		if (++span_index > 100000)
+		{
+			QTRACE (QT_POLY_TRACE_GUARD, span_index);
+			QTRACE (QT_POLY_TRACE_BAD_COUNT, pspanpackage->count);
+			return;
+		}
+
+		lcount = d_aspancount - pspanpackage->count;
+
+		errorterm += erroradjustup;
+		if (errorterm >= 0)
+		{
+			d_aspancount += d_countextrastep;
+			errorterm -= erroradjustdown;
+		}
+		else
+		{
+			d_aspancount += ubasestep;
+		}
+
+		if (lcount > 100000 || lcount < -100000)
+		{
+			QTRACE (QT_POLY_TRACE_BAD_LCOUNT, lcount);
+			QTRACE (QT_POLY_TRACE_BAD_COUNT, pspanpackage->count);
+			QTRACE (QT_POLY_TRACE_SPAN, span_index);
+			return;
+		}
+
+		if (lcount)
+		{
+			lpdest = pspanpackage->pdest;
+			lptex = pspanpackage->ptex;
+			lpz = pspanpackage->pz;
+			lsfrac = pspanpackage->sfrac;
+			ltfrac = pspanpackage->tfrac;
+			llight = pspanpackage->light;
+			lzi = pspanpackage->zi;
+
+			inner_guard = 0;
+			do
+			{
+				if ((lzi >> 16) >= *lpz)
+				{
+					*lpdest = ((byte *)acolormap)[*lptex + (llight & 0xFF00)];
+					*lpz = lzi >> 16;
+				}
+				lpdest++;
+				lzi += r_zistepx;
+				lpz++;
+				llight += r_lstepx;
+				lptex += a_ststepxwhole;
+				lsfrac += a_sstepxfrac;
+				lptex += lsfrac >> 16;
+				lsfrac &= 0xFFFF;
+				ltfrac += a_tstepxfrac;
+				if (ltfrac & 0x10000)
+				{
+					lptex += r_affinetridesc.skinwidth;
+					ltfrac &= 0xFFFF;
+				}
+				if (++inner_guard > 100000)
+				{
+					QTRACE (QT_POLY_TRACE_GUARD, inner_guard);
+					QTRACE (QT_POLY_TRACE_SPAN, span_index);
+					return;
+				}
+			} while (--lcount);
+		}
+
+		pspanpackage++;
+		if (pspanpackage->count == -999999)
+		{
+			QTRACE (QT_POLY_TRACE_EXIT, span_index);
+			return;
+		}
+
+		QTRACE_RATE (QT_POLY_TRACE_SPAN, span_index, 64);
+	}
+}
+#endif	// QTRACE_ENABLE
+
 void D_PolysetFillSpans8 (spanpackage_t *pspanpackage)
 {
 	int				color;
@@ -724,6 +839,10 @@ void D_RasterizeAliasPolySmooth (void)
 	int				initialleftheight, initialrightheight;
 	int				*plefttop, *prighttop, *pleftbottom, *prightbottom;
 	int				working_lstepx, originalcount;
+
+#ifdef QTRACE_ENABLE
+	qtrace_poly_debug = r_framecount >= 0x7FFFFFFF;
+#endif
 
 	plefttop = pedgetable->pleftedgevert0;
 	prighttop = pedgetable->prightedgevert0;
@@ -944,7 +1063,14 @@ void D_RasterizeAliasPolySmooth (void)
 	d_countextrastep = ubasestep + 1;
 	originalcount = a_spans[initialrightheight].count;
 	a_spans[initialrightheight].count = -999999; // mark end of the spanpackages
-	D_PolysetDrawSpans8 (a_spans);
+	QTRACE (QT_POLYSET_SPANS_ENTER, 0);
+#ifdef QTRACE_ENABLE
+	if (qtrace_poly_debug)
+		D_PolysetDrawSpans8_Trace (a_spans, 0);
+	else
+#endif
+		D_PolysetDrawSpans8 (a_spans);
+	QTRACE (QT_POLYSET_SPANS_EXIT, 0);
 
 // scan out the bottom part of the right edge, if it exists
 	if (pedgetable->numrightedges == 2)
@@ -968,7 +1094,14 @@ void D_RasterizeAliasPolySmooth (void)
 		d_countextrastep = ubasestep + 1;
 		a_spans[initialrightheight + height].count = -999999;
 											// mark end of the spanpackages
-		D_PolysetDrawSpans8 (pstart);
+		QTRACE (QT_POLYSET_SPANS_ENTER, 1);
+#ifdef QTRACE_ENABLE
+		if (qtrace_poly_debug)
+			D_PolysetDrawSpans8_Trace (pstart, 1);
+		else
+#endif
+			D_PolysetDrawSpans8 (pstart);
+		QTRACE (QT_POLYSET_SPANS_EXIT, 1);
 	}
 }
 

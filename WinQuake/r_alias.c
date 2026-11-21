@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 #include "d_local.h"	// FIXME: shouldn't be needed (is needed for patch
+#include "qtrace.h"
 						// right now, but that should move)
 
 #define LIGHT_MIN	5		// lowest light value we'll allow, to avoid the
@@ -707,6 +708,7 @@ void R_AliasDrawModel (alight_t *plighting)
 	auxvert_t		auxverts[MAXALIASVERTS];
 
 	r_amodels_drawn++;
+	QTRACE (QT_ALIAS_DRAW_ENTER, r_amodels_drawn);
 
 // cache align
 	pfinalverts = (finalvert_t *)
@@ -720,6 +722,7 @@ void R_AliasDrawModel (alight_t *plighting)
 	R_AliasSetUpTransform (currententity->trivial_accept);
 	R_AliasSetupLighting (plighting);
 	R_AliasSetupFrame ();
+	QTRACE (QT_ALIAS_SETUP_DONE, currententity->trivial_accept);
 
 	if (!currententity->colormap)
 		Sys_Error ("R_AliasDrawModel: !currententity->colormap");
@@ -745,9 +748,12 @@ void R_AliasDrawModel (alight_t *plighting)
 	else
 		ziscale = (float)0x8000 * (float)0x10000 * 3.0;
 
+	QTRACE (QT_ALIAS_PREPARE_ENTER, currententity->trivial_accept);
 	if (currententity->trivial_accept)
 		R_AliasPrepareUnclippedPoints ();
 	else
 		R_AliasPreparePoints ();
+	QTRACE (QT_ALIAS_PREPARE_EXIT, currententity->trivial_accept);
+	QTRACE (QT_ALIAS_DRAW_EXIT, r_amodels_drawn);
 }
 

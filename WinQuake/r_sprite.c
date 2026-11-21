@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "r_local.h"
+#include "qtrace.h"
 
 static int				clip_current;
 static vec5_t			clip_verts[2][MAXWORKINGVERTS];
@@ -290,6 +291,8 @@ void R_DrawSprite (void)
 	vec3_t			tvec;
 	float			dot, angle, sr, cr;
 
+	QTRACE (QT_SPRITE_ENTER, r_amodels_drawn);
+
 	psprite = currententity->model->cache.data;
 
 	r_spritedesc.pspriteframe = R_GetSpriteframe (psprite);
@@ -397,5 +400,7 @@ void R_DrawSprite (void)
 	R_RotateSprite (psprite->beamlength);
 
 	R_SetupAndDrawSprite ();
+
+	QTRACE (QT_SPRITE_EXIT, r_amodels_drawn);
 }
 

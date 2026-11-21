@@ -183,7 +183,7 @@ LTestDone:
 
 ; 1x1
 DP_1x1:
-        cmp     bp, [edx]
+        cmp [edx], bp
         jg      LDone
         mov     [edx], bp
         mov     [edi], ch
@@ -194,22 +194,22 @@ DP_2x2:
         push    esi
         mov     ebx, [_screenwidth]
         mov     esi, [_d_zrowbytes]
-        cmp     bp, [edx]
+        cmp [edx], bp
         jg      L2x2_1
         mov     [edx], bp
         mov     [edi], ch
 L2x2_1:
-        cmp     bp, [edx+2]
+        cmp [edx+2], bp
         jg      L2x2_2
         mov     [edx+2], bp
         mov     [edi+1], ch
 L2x2_2:
-        cmp     bp, [edx+esi]
+        cmp [edx+esi], bp
         jg      L2x2_3
         mov     [edx+esi], bp
         mov     [edi+ebx], ch
 L2x2_3:
-        cmp     bp, [edx+esi+2]
+        cmp [edx+esi+2], bp
         jg      L2x2_4
         mov     [edx+esi+2], bp
         mov     [edi+ebx+1], ch
@@ -222,47 +222,47 @@ DP_3x3:
         push    esi
         mov     ebx, [_screenwidth]
         mov     esi, [_d_zrowbytes]
-        cmp     bp, [edx]
+        cmp [edx], bp
         jg      L3x3_1
         mov     [edx], bp
         mov     [edi], ch
 L3x3_1:
-        cmp     bp, [edx+2]
+        cmp [edx+2], bp
         jg      L3x3_2
         mov     [edx+2], bp
         mov     [edi+1], ch
 L3x3_2:
-        cmp     bp, [edx+4]
+        cmp [edx+4], bp
         jg      L3x3_3
         mov     [edx+4], bp
         mov     [edi+2], ch
 L3x3_3:
-        cmp     bp, [edx+esi]
+        cmp [edx+esi], bp
         jg      L3x3_4
         mov     [edx+esi], bp
         mov     [edi+ebx], ch
 L3x3_4:
-        cmp     bp, [edx+esi+2]
+        cmp [edx+esi+2], bp
         jg      L3x3_5
         mov     [edx+esi+2], bp
         mov     [edi+ebx+1], ch
 L3x3_5:
-        cmp     bp, [edx+esi+4]
+        cmp [edx+esi+4], bp
         jg      L3x3_6
         mov     [edx+esi+4], bp
         mov     [edi+ebx+2], ch
 L3x3_6:
-        cmp     bp, [edx+esi*2]
+        cmp [edx+esi*2], bp
         jg      L3x3_7
         mov     [edx+esi*2], bp
         mov     [edi+ebx*2], ch
 L3x3_7:
-        cmp     bp, [edx+esi*2+2]
+        cmp [edx+esi*2+2], bp
         jg      L3x3_8
         mov     [edx+esi*2+2], bp
         mov     [edi+ebx*2+1], ch
 L3x3_8:
-        cmp     bp, [edx+esi*2+4]
+        cmp [edx+esi*2+4], bp
         jg      L3x3_9
         mov     [edx+esi*2+4], bp
         mov     [edi+ebx*2+2], ch
@@ -276,30 +276,78 @@ DP_4x4:
         mov     ebx, [_screenwidth]
         mov     esi, [_d_zrowbytes]
         ; row 0
-        cmp bp,[edx]; jg L4x4_1; mov [edx],bp; mov [edi],ch
-L4x4_1: cmp bp,[edx+2]; jg L4x4_2; mov [edx+2],bp; mov [edi+1],ch
-L4x4_2: cmp bp,[edx+4]; jg L4x4_3; mov [edx+4],bp; mov [edi+2],ch
-L4x4_3: cmp bp,[edx+6]; jg L4x4_4; mov [edx+6],bp; mov [edi+3],ch
+        cmp     word ptr [edx], bp
+        jg      L4x4_1
+        mov     [edx], bp
+        mov     [edi], ch
+L4x4_1: cmp     word ptr [edx+2], bp
+        jg      L4x4_2
+        mov     [edx+2], bp
+        mov     [edi+1], ch
+L4x4_2: cmp     word ptr [edx+4], bp
+        jg      L4x4_3
+        mov     [edx+4], bp
+        mov     [edi+2], ch
+L4x4_3: cmp     word ptr [edx+6], bp
+        jg      L4x4_4
+        mov     [edx+6], bp
+        mov     [edi+3], ch
 L4x4_4:
         ; row 1
-        cmp bp,[edx+esi]; jg L4x4_5; mov [edx+esi],bp; mov [edi+ebx],ch
-L4x4_5: cmp bp,[edx+esi+2]; jg L4x4_6; mov [edx+esi+2],bp; mov [edi+ebx+1],ch
-L4x4_6: cmp bp,[edx+esi+4]; jg L4x4_7; mov [edx+esi+4],bp; mov [edi+ebx+2],ch
-L4x4_7: cmp bp,[edx+esi+6]; jg L4x4_8; mov [edx+esi+6],bp; mov [edi+ebx+3],ch
+        cmp     word ptr [edx+esi], bp
+        jg      L4x4_5
+        mov     [edx+esi], bp
+        mov     [edi+ebx], ch
+L4x4_5: cmp     word ptr [edx+esi+2], bp
+        jg      L4x4_6
+        mov     [edx+esi+2], bp
+        mov     [edi+ebx+1], ch
+L4x4_6: cmp     word ptr [edx+esi+4], bp
+        jg      L4x4_7
+        mov     [edx+esi+4], bp
+        mov     [edi+ebx+2], ch
+L4x4_7: cmp     word ptr [edx+esi+6], bp
+        jg      L4x4_8
+        mov     [edx+esi+6], bp
+        mov     [edi+ebx+3], ch
 L4x4_8:
         lea     edx, [edx+esi*2]
         lea     edi, [edi+ebx*2]
         ; row 2
-        cmp bp,[edx]; jg L4x4_9; mov [edx],bp; mov [edi],ch
-L4x4_9: cmp bp,[edx+2]; jg L4x4_10; mov [edx+2],bp; mov [edi+1],ch
-L4x4_10: cmp bp,[edx+4]; jg L4x4_11; mov [edx+4],bp; mov [edi+2],ch
-L4x4_11: cmp bp,[edx+6]; jg L4x4_12; mov [edx+6],bp; mov [edi+3],ch
+        cmp     word ptr [edx], bp
+        jg      L4x4_9
+        mov     [edx], bp
+        mov     [edi], ch
+L4x4_9: cmp     word ptr [edx+2], bp
+        jg      L4x4_10
+        mov     [edx+2], bp
+        mov     [edi+1], ch
+L4x4_10: cmp    word ptr [edx+4], bp
+        jg      L4x4_11
+        mov     [edx+4], bp
+        mov     [edi+2], ch
+L4x4_11: cmp    word ptr [edx+6], bp
+        jg      L4x4_12
+        mov     [edx+6], bp
+        mov     [edi+3], ch
 L4x4_12:
         ; row 3
-        cmp bp,[edx+esi]; jg L4x4_13; mov [edx+esi],bp; mov [edi+ebx],ch
-L4x4_13: cmp bp,[edx+esi+2]; jg L4x4_14; mov [edx+esi+2],bp; mov [edi+ebx+1],ch
-L4x4_14: cmp bp,[edx+esi+4]; jg L4x4_15; mov [edx+esi+4],bp; mov [edi+ebx+2],ch
-L4x4_15: cmp bp,[edx+esi+6]; jg L4x4_16; mov [edx+esi+6],bp; mov [edi+ebx+3],ch
+        cmp     word ptr [edx+esi], bp
+        jg      L4x4_13
+        mov     [edx+esi], bp
+        mov     [edi+ebx], ch
+L4x4_13: cmp    word ptr [edx+esi+2], bp
+        jg      L4x4_14
+        mov     [edx+esi+2], bp
+        mov     [edi+ebx+1], ch
+L4x4_14: cmp    word ptr [edx+esi+4], bp
+        jg      L4x4_15
+        mov     [edx+esi+4], bp
+        mov     [edi+ebx+2], ch
+L4x4_15: cmp    word ptr [edx+esi+6], bp
+        jg      L4x4_16
+        mov     [edx+esi+6], bp
+        mov     [edi+ebx+3], ch
 L4x4_16:
         pop     esi
         jmp     LDone
@@ -313,7 +361,7 @@ LDefault:
 LGenRowLoop:
         mov     eax, [DP_Pix]
 LGenColLoop:
-        cmp     bp, [edx+eax*2-2]
+        cmp [edx+eax*2-2], bp
         jg      LGSkip
         mov     [edx+eax*2-2], bp
         mov     [edi+eax-1], ch

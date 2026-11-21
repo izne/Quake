@@ -114,7 +114,7 @@ R_Alias_clip_bottom_ proc near
         mov     eax, [_r_refdef+rd_aliasvrectbottom]
         mov     edx, [esi+fv_v+4]
         mov     ecx, [edi+fv_v+4]
-        cmp     ecx, edx
+        cmp     edx, ecx
         jl      ACB_Fwd
         mov     edx, [edi+fv_v+4]
         mov     ecx, [esi+fv_v+4]
@@ -150,7 +150,7 @@ R_Alias_clip_top_ proc near
         mov     eax, [_r_refdef+rd_aliasvrect+4]
         mov     edx, [esi+fv_v+4]
         mov     ecx, [edi+fv_v+4]
-        cmp     ecx, edx
+        cmp     edx, ecx
         jl      ACT_Fwd
         mov     edx, [edi+fv_v+4]
         mov     ecx, [esi+fv_v+4]
@@ -187,7 +187,7 @@ R_Alias_clip_right_ proc near
         ; right/left: compare v[1] for direction, use v[0] for the interpolation
         mov     edx, [esi+fv_v+4]
         mov     ecx, [edi+fv_v+4]
-        cmp     ecx, edx
+        cmp     edx, ecx
         mov     edx, [esi+fv_v+0]
         mov     ecx, [edi+fv_v+0]
         jl      ACR_Fwd
@@ -225,7 +225,7 @@ R_Alias_clip_left_ proc near
         mov     eax, [_r_refdef+rd_aliasvrect+0]
         mov     edx, [esi+fv_v+4]
         mov     ecx, [edi+fv_v+4]
-        cmp     ecx, edx
+        cmp     edx, ecx
         mov     edx, [esi+fv_v+0]
         mov     ecx, [edi+fv_v+0]
         jl      ACL_Fwd

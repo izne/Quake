@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "d_local.h"
+#include "qtrace.h"
 
 static int	miplevel;
 
@@ -183,6 +184,8 @@ void D_DrawSurfaces (void)
 	vec3_t			world_transformed_modelorg;
 	vec3_t			local_modelorg;
 
+	QTRACE (QT_DRAW_SURFACES_ENTER, (int)(surface_p - surfaces));
+
 	currententity = &cl_entities[0];
 	TransformVector (modelorg, transformed_modelorg);
 	VectorCopy (transformed_modelorg, world_transformed_modelorg);
@@ -192,6 +195,7 @@ void D_DrawSurfaces (void)
 	{
 		for (s = &surfaces[1] ; s<surface_p ; s++)
 		{
+			QTRACE_RATE (QT_DRAW_SURF, (int)(s - surfaces), 16);
 			if (!s->spans)
 				continue;
 
@@ -207,6 +211,7 @@ void D_DrawSurfaces (void)
 	{
 		for (s = &surfaces[1] ; s<surface_p ; s++)
 		{
+			QTRACE_RATE (QT_DRAW_SURF, (int)(s - surfaces), 16);
 			if (!s->spans)
 				continue;
 
@@ -331,5 +336,7 @@ void D_DrawSurfaces (void)
 			}
 		}
 	}
+
+	QTRACE (QT_DRAW_SURFACES_EXIT, (int)(surface_p - surfaces));
 }
 

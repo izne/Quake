@@ -398,15 +398,15 @@ LSplit:
         mov     ecx, [ebx+0]
         mov     edx, [esi+0]
         sar     eax, 1
-        add     ecx, edx
+        add     edx, ecx
         mov     [esp+20], eax
+        sar     edx, 1
         mov     eax, [ebx+4]
-        sar     ecx, 1
+        mov     [esp+0], edx
         mov     ebp, [esi+4]
-        mov     [esp+0], ecx
-        add     eax, ebp
-        sar     eax, 1
-        mov     [esp+4], eax
+        add     ebp, eax
+        sar     ebp, 1
+        mov     [esp+4], ebp
 
 ; if (lp2[1] > lp1[1]) goto nodraw
         cmp     [esi+4], eax
@@ -422,7 +422,7 @@ LDraw:
         sar     edx, 16
         mov     ebp, [esp+0]            ; new[0]
         mov     eax, [_zspantable+ecx*4]
-        cmp     dx, [eax+ebp*2]
+        cmp dx, [eax+ebp*2]
         jnge    LNoDraw
         mov     [eax+ebp*2], dx
         mov     eax, [esp+12]           ; new[3]>>16
@@ -558,7 +558,7 @@ LRightEdgeStepped:
 
 LDrawLoop:
 LDraw8:
-        cmp     bp, [ecx]
+        cmp bp, [ecx]
         jl      Lp1
         xor     eax, eax
         mov     ah, dh
@@ -576,7 +576,7 @@ Lp1:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw7:
-        cmp     bp, [ecx+2]
+        cmp bp, [ecx+2]
         jl      Lp2
         xor     eax, eax
         mov     ah, dh
@@ -594,7 +594,7 @@ Lp2:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw6:
-        cmp     bp, [ecx+4]
+        cmp bp, [ecx+4]
         jl      Lp3
         xor     eax, eax
         mov     ah, dh
@@ -612,7 +612,7 @@ Lp3:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw5:
-        cmp     bp, [ecx+6]
+        cmp bp, [ecx+6]
         jl      Lp4
         xor     eax, eax
         mov     ah, dh
@@ -630,7 +630,7 @@ Lp4:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw4:
-        cmp     bp, [ecx+8]
+        cmp bp, [ecx+8]
         jl      Lp5
         xor     eax, eax
         mov     ah, dh
@@ -648,7 +648,7 @@ Lp5:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw3:
-        cmp     bp, [ecx+10]
+        cmp bp, [ecx+10]
         jl      Lp6
         xor     eax, eax
         mov     ah, dh
@@ -666,7 +666,7 @@ Lp6:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw2:
-        cmp     bp, [ecx+12]
+        cmp bp, [ecx+12]
         jl      Lp7
         xor     eax, eax
         mov     ah, dh
@@ -684,7 +684,7 @@ Lp7:
         adc     esi, [advancetable+4+eax*4]
 
 LDraw1:
-        cmp     bp, [ecx+14]
+        cmp bp, [ecx+14]
         jl      Lp8
         xor     eax, eax
         mov     ah, dh
@@ -729,7 +729,7 @@ LExactlyOneLong:
         mov     ebp, [esi+spanpackage_t_zi]
         ror     ebp, 16
         mov     ebx, [esi+spanpackage_t_ptex]
-        cmp     bp, [ecx]
+        cmp bp, [ecx]
         jl      LNextSpan
         xor     eax, eax
         mov     edi, [esi+spanpackage_t_pdest]
@@ -1055,7 +1055,7 @@ LFVLoop:
         mov     edi, [_zspantable+esi*4]
         mov     edx, [ebx+fv_v+20]
         shr     edx, 16
-        cmp     dx, [edi+eax*2]
+        cmp dx, [edi+eax*2]
         jl      LNextVert
         mov     [edi+eax*2], dx
 

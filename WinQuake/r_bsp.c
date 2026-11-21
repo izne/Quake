@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "r_local.h"
+#include "qtrace.h"
 
 //
 // current entity info
@@ -454,6 +455,8 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 	mleaf_t		*pleaf;
 	double		d, dot;
 
+	QTRACE_RATE (QT_BSP_NODE, clipflags, 64);
+
 	if (node->contents == CONTENTS_SOLID)
 		return;		// solid
 
@@ -651,6 +654,8 @@ void R_RenderWorld (void)
 	model_t		*clmodel;
 	btofpoly_t	btofpolys[MAX_BTOFPOLYS];
 
+	QTRACE (QT_RENDER_WORLD_ENTER, r_framecount);
+
 	pbtofpolys = btofpolys;
 
 	currententity = &cl_entities[0];
@@ -669,6 +674,8 @@ void R_RenderWorld (void)
 			R_RenderPoly (btofpolys[i].psurf, btofpolys[i].clipflags);
 		}
 	}
+
+	QTRACE (QT_RENDER_WORLD_EXIT, r_framecount);
 }
 
 

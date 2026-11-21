@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 #include "d_local.h"	// FIXME: shouldn't need to include this
+#include "qtrace.h"
 
 #define MAXLEFTCLIPEDGES		100
 
@@ -392,6 +393,8 @@ void R_RenderFace (msurface_t *fa, int clipflags)
 	vec3_t		p_normal;
 	medge_t		*pedges, tedge;
 	clipplane_t	*pclip;
+
+	QTRACE_RATE (QT_RENDER_FACE, c_faceclip, 16);
 
 // skip out if no more surfs
 	if ((surface_p) >= surf_max)

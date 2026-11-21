@@ -263,6 +263,8 @@ R_Surf16End_:
 public R_Surf16Patch_
 R_Surf16Patch_ proc near
         push    ebx
+        push    ecx
+        push    edx
         mov     eax, [_colormap]
         mov     ebx, offset LPatchTable16
         mov     ecx, 16
@@ -272,6 +274,8 @@ LPatchLoop16:
         mov     [edx], eax
         dec     ecx
         jnz     LPatchLoop16
+        pop     edx
+        pop     ecx
         pop     ebx
         ret
 R_Surf16Patch_ endp

@@ -15,6 +15,7 @@
 #include "d_local.h"
 #include "dosisms.h"
 #include "vid_dos.h"
+#include "qtrace.h"
 
 #ifdef __DJGPP__
 #include <dpmi.h>
@@ -497,12 +498,15 @@ void VGA_SwapBuffersCopy (viddef_t *lvid, vmode_t *pcurrentmode,
 
 	// TODO: copy only specified rectangles
 
+		QTRACE (QT_VGA_PLANAR_ENTER, (int)lvid->buffer);
 		VGA_UpdatePlanarScreen (lvid->buffer);
+		QTRACE (QT_VGA_PLANAR_EXIT, 0);
 	}
 	else
 	{
 		while (rects)
 		{
+			QTRACE (QT_VGA_COPY_ENTER, (int)rects);
 			VGA_UpdateLinearScreen (
 					lvid->buffer + rects->x + (rects->y * lvid->rowbytes),
 		 			VGA_pagebase + rects->x + (rects->y * VGA_rowbytes),
@@ -511,6 +515,7 @@ void VGA_SwapBuffersCopy (viddef_t *lvid, vmode_t *pcurrentmode,
 					lvid->rowbytes,
 					VGA_rowbytes);
 
+			QTRACE (QT_VGA_COPY_EXIT, 0);
 			rects = rects->pnext;
 		}
 	}
@@ -528,6 +533,7 @@ void VGA_SwapBuffers (viddef_t *lvid, vmode_t *pcurrentmode, vrect_t *rects)
 
 	if (vid_wait.value == VID_WAIT_VSYNC)
 		VGA_WaitVsync ();
+	QTRACE (QT_VGA_WAIT_DONE, (int)rects);
 
 	VGA_SwapBuffersCopy (lvid, pcurrentmode, rects);
 }

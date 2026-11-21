@@ -164,12 +164,14 @@ SND_PaintChannelFrom8_ endp
 ;
 ; C: void Snd_WriteLinearBlastStereo16(void)
 ; void function: no incoming register args. Uses C globals directly.
-; Preserves EBX/EDI/ESI.
+; Preserves EBX/ECX/EDX/EDI/ESI (Watcom callee-saved registers).
 ;=============================================================================
 Snd_WriteLinearBlastStereo16_ proc near
         push    esi
         push    edi
         push    ebx
+        push    ecx
+        push    edx
 
         mov     ecx, [_snd_linear_count]
         mov     ebx, [_snd_p]
@@ -215,6 +217,8 @@ LClampDone2:
         sub     ecx, 2
         jnz     short LWLBLoopTop
 
+        pop     edx
+        pop     ecx
         pop     ebx
         pop     edi
         pop     esi

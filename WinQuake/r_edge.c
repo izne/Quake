@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "r_local.h"
+#include "qtrace.h"
 
 #if 0
 // FIXME
@@ -67,6 +68,166 @@ float	fv;
 
 void R_GenerateSpans (void);
 void R_GenerateSpansBackward (void);
+
+#ifdef QTRACE_ENABLE
+static void R_StepActiveU_Trace (edge_t *pedge);
+static void R_TraceNewEdges (int iv, edge_t *edge);
+static int qtrace_step_debug;
+static int qtrace_insert_debug;
+#endif
+
+#ifdef QTRACE_ENABLE
+#define QTRACE_SCAN(tag, iv) do { \
+	if ((iv) >= 128 && (iv) < 224) \
+		QTRACE (tag, iv); \
+	else \
+		QTRACE_RATE (tag, iv, 32); \
+} while (0)
+#else
+#define QTRACE_SCAN(tag, iv) ((void)0)
+#endif
+
+#ifdef QTRACE_ENABLE
+static void R_TraceNewEdges (int iv, edge_t *edge)
+{
+	int		i;
+
+	QTRACE (QT_INS_INFO, (int)edge);
+	QTRACE (QT_INS_IV, iv);
+	QTRACE (QT_INS_PTR, (int)edge_head.next);
+	QTRACE (QT_INS_PTR, (int)&edge_tail);
+
+	for (i=0 ; edge && i<64 ; i++, edge=edge->next)
+	{
+		QTRACE (QT_INS_PTR, (int)edge);
+		QTRACE (QT_INS_U, edge->u);
+		QTRACE (QT_INS_STEP, edge->u_step);
+		QTRACE (QT_INS_NEXT, (int)edge->next);
+		QTRACE (QT_INS_NEXTREMOVE, (int)edge->nextremove);
+		QTRACE (QT_INS_OWNER, (int)edge->owner);
+	}
+
+	if (edge)
+		QTRACE (QT_INS_CIRCULAR, (int)edge);
+}
+
+enum
+{
+	QEB_STEP_PEDGE = 1,
+	QEB_STEP_PREV,
+	QEB_STEP_NEXT,
+	QEB_STEP_WEDGE,
+	QEB_NEWEDGE,
+	QEB_NEWEDGE_ORDER,
+	QEB_REMOVEEDGE,
+	QEB_ACTIVE_AFTER_INSERT,
+	QEB_ACTIVE_AFTER_REMOVE,
+	QEB_ACTIVE_BEFORE_STEP
+};
+
+static int QTraceValidEdgePtr (edge_t *e)
+{
+	if (e == &edge_head || e == &edge_tail ||
+		e == &edge_aftertail || e == &edge_sentinel)
+		return 1;
+
+	if (r_edges == NULL || edge_max == NULL)
+		return 0;
+
+	if ((unsigned long)e >= (unsigned long)r_edges &&
+		(unsigned long)e <  (unsigned long)edge_max &&
+		(((unsigned long)e - (unsigned long)r_edges) % sizeof(edge_t)) == 0)
+		return 1;
+
+	return 0;
+}
+
+static void QTraceBadEdge (int where, edge_t *e)
+{
+	QTRACE (QT_EDGE_BAD_WHERE, where);
+	QTRACE (QT_EDGE_BAD_PTR, (int)e);
+	QTRACE (QT_EDGE_BAD_FRAME, r_framecount);
+}
+
+static void QTraceCheckNewEdges (int iv, edge_t *edge)
+{
+	edge_t	*prev = NULL;
+
+	for ( ; edge ; edge = edge->next)
+	{
+		if (!QTraceValidEdgePtr (edge))
+		{
+			QTraceBadEdge (QEB_NEWEDGE, edge);
+			QTRACE (QT_EDGE_BAD_IV, iv);
+			return;
+		}
+		if (prev != NULL && prev->u > edge->u)
+		{
+			QTraceBadEdge (QEB_NEWEDGE_ORDER, edge);
+			QTRACE (QT_EDGE_BAD_AUX, prev->u);
+			QTRACE (QT_EDGE_BAD_IV, iv);
+			return;
+		}
+		prev = edge;
+	}
+}
+
+static void QTraceCheckRemoveEdges (int iv, edge_t *edge)
+{
+	for ( ; edge ; edge = edge->nextremove)
+	{
+		if (!QTraceValidEdgePtr (edge))
+		{
+			QTraceBadEdge (QEB_REMOVEEDGE, edge);
+			QTRACE (QT_EDGE_BAD_IV, iv);
+			return;
+		}
+	}
+}
+
+static void QTraceCheckActiveList (int where)
+{
+	edge_t	*e = edge_head.next;
+	edge_t	*prev = &edge_head;
+	int		guard = 0;
+
+	while (e != &edge_tail)
+	{
+		if (++guard > 10000)
+		{
+			QTRACE (QT_EDGE_BAD_AUX, guard);
+			QTraceBadEdge (where, e);
+			return;
+		}
+		if (!QTraceValidEdgePtr (e))
+		{
+			QTraceBadEdge (where, e);
+			return;
+		}
+		if (e->prev != prev)
+		{
+			QTRACE (QT_EDGE_BAD_AUX, (int)e->prev);
+			QTraceBadEdge (where, e);
+			return;
+		}
+		if (!QTraceValidEdgePtr (e->next))
+		{
+			QTraceBadEdge (where, e->next);
+			return;
+		}
+		prev = e;
+		e = e->next;
+	}
+}
+
+#define QTRACE_STEP_CHECK(e,w) do { \
+	if (!QTraceValidEdgePtr (e)) \
+	{ \
+		QTraceBadEdge ((w), (e)); \
+		return; \
+	} \
+} while (0)
+#endif
 
 void R_LeadingEdge (edge_t *edge);
 void R_LeadingEdgeBackwards (edge_t *edge);
@@ -292,6 +453,134 @@ pushback:
 }
 
 #endif	// !id386
+
+#ifdef QTRACE_ENABLE
+static void R_StepActiveU_Trace (edge_t *pedge)
+{
+	edge_t		*pnext_edge, *pwedge;
+	int			outer_guard = 0;
+	int			pushback_guard;
+
+	QTRACE (QT_STEP_TRACE_ENTER, (int)pedge);
+	if (qtrace_step_debug)
+		QTRACE (QT_STEP_CP_ENTER_DONE, (int)pedge);
+
+	while (1)
+	{
+trace_nextedge:
+		QTRACE_STEP_CHECK (pedge, QEB_STEP_PEDGE);
+		QTRACE_STEP_CHECK (pedge->prev, QEB_STEP_PREV);
+		QTRACE_STEP_CHECK (pedge->next, QEB_STEP_NEXT);
+
+		if (++outer_guard > 10000)
+		{
+			QTRACE (QT_STEP_RUNAWAY_OUTER, (int)pedge);
+			QTRACE (QT_STEP_BAD_EDGE_U, pedge->u);
+			QTRACE (QT_STEP_BAD_STEP, pedge->u_step);
+			QTRACE (QT_STEP_BAD_PREV_U, pedge->prev->u);
+			QTRACE (QT_STEP_BAD_PREV_PTR, (int)pedge->prev);
+			QTRACE (QT_STEP_BAD_WEDGE_PTR, (int)pedge->next);
+			return;
+		}
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_OUTER, outer_guard);
+
+		pedge->u += pedge->u_step;
+		if (pedge->u < pedge->prev->u)
+			goto trace_pushback;
+		pedge = pedge->next;
+
+		pedge->u += pedge->u_step;
+		if (pedge->u < pedge->prev->u)
+			goto trace_pushback;
+		pedge = pedge->next;
+
+		pedge->u += pedge->u_step;
+		if (pedge->u < pedge->prev->u)
+			goto trace_pushback;
+		pedge = pedge->next;
+
+		pedge->u += pedge->u_step;
+		if (pedge->u < pedge->prev->u)
+			goto trace_pushback;
+		pedge = pedge->next;
+
+		goto trace_nextedge;
+
+trace_pushback:
+		if (pedge == &edge_aftertail)
+		{
+			QTRACE (QT_STEP_TRACE_EXIT, (int)pedge);
+			return;
+		}
+
+		QTRACE_STEP_CHECK (pedge, QEB_STEP_PEDGE);
+		QTRACE_STEP_CHECK (pedge->prev, QEB_STEP_PREV);
+		QTRACE_STEP_CHECK (pedge->next, QEB_STEP_NEXT);
+
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_PUSHBACK, (int)pedge);
+
+	// push it back to keep it sorted
+		pnext_edge = pedge->next;
+
+	// pull the edge out of the edge list
+		pedge->next->prev = pedge->prev;
+		pedge->prev->next = pedge->next;
+
+	// find out where the edge goes in the edge list
+		pwedge = pedge->prev->prev;
+		QTRACE_STEP_CHECK (pwedge, QEB_STEP_WEDGE);
+
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_PULLED, (int)pedge);
+
+		pushback_guard = 0;
+		while (pwedge->u > pedge->u)
+		{
+			QTRACE_STEP_CHECK (pwedge->prev, QEB_STEP_WEDGE);
+			pwedge = pwedge->prev;
+			if (qtrace_step_debug)
+				QTRACE (QT_STEP_CP_PB_LOOP, pushback_guard);
+			if (++pushback_guard > 100000)
+			{
+				QTRACE (QT_STEP_RUNAWAY_PUSHBACK, (int)pedge);
+				QTRACE (QT_STEP_BAD_EDGE_U, pedge->u);
+				QTRACE (QT_STEP_BAD_PREV_U, pedge->prev->u);
+				QTRACE (QT_STEP_BAD_HEAD_U, edge_head.u);
+				QTRACE (QT_STEP_BAD_STEP, pedge->u_step);
+				QTRACE (QT_STEP_BAD_PREV_PTR, (int)pedge->prev);
+				QTRACE (QT_STEP_BAD_WEDGE_PTR, (int)pwedge);
+				return;
+			}
+		}
+
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_WEDGE, (int)pwedge);
+
+	// put the edge back into the edge list
+		QTRACE_STEP_CHECK (pwedge->next, QEB_STEP_WEDGE);
+		pedge->next = pwedge->next;
+		pedge->prev = pwedge;
+		pedge->next->prev = pedge;
+		pwedge->next = pedge;
+
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_REINSERT, (int)pedge);
+
+		QTRACE_STEP_CHECK (pnext_edge, QEB_STEP_PEDGE);
+		pedge = pnext_edge;
+		if (pedge == &edge_tail)
+		{
+			QTRACE (QT_STEP_TRACE_EXIT, (int)pedge);
+			return;
+		}
+
+		if (qtrace_step_debug)
+			QTRACE (QT_STEP_CP_NEXT, (int)pedge);
+	}
+}
+#endif
 
 
 /*
@@ -667,6 +956,14 @@ void R_ScanEdges (void)
 	espan_t	*basespan_p;
 	surf_t	*s;
 
+	QTRACE (QT_SCAN_EDGES_ENTER, r_framecount);
+#ifdef QTRACE_ENABLE
+	if (r_framecount >= 0x7FFFFFFF)
+		qtrace_insert_debug = 1;
+	if (r_framecount >= 0x7FFFFFFF)
+		qtrace_step_debug = 1;
+#endif
+
 	basespan_p = (espan_t *)
 			((long)(basespans + CACHE_SIZE - 1) & ~(CACHE_SIZE - 1));
 	max_span_p = &basespan_p[MAXSPANS - r_refdef.vrect.width];
@@ -708,25 +1005,45 @@ void R_ScanEdges (void)
 	for (iv=r_refdef.vrect.y ; iv<bottom ; iv++)
 	{
 		current_iv = iv;
+		QTRACE_RATE (QT_SCAN_LINE, iv, 32);
 		fv = (float)iv;
 
 	// mark that the head (background start) span is pre-included
 		surfaces[1].spanstate = 1;
 
+		QTRACE_SCAN (QT_SCAN_INSERT_BEFORE, iv);
+#ifdef QTRACE_ENABLE
+		if (qtrace_insert_debug && newedges[iv])
+			R_TraceNewEdges (iv, newedges[iv]);
+		if (qtrace_step_debug && newedges[iv])
+			QTraceCheckNewEdges (iv, newedges[iv]);
+#endif
 		if (newedges[iv])
 		{
 			R_InsertNewEdges (newedges[iv], edge_head.next);
 		}
+#ifdef QTRACE_ENABLE
+		if (qtrace_step_debug && newedges[iv])
+			QTraceCheckActiveList (QEB_ACTIVE_AFTER_INSERT);
+#endif
+		QTRACE_SCAN (QT_SCAN_INSERT_AFTER, iv);
 
+		QTRACE_SCAN (QT_SCAN_SPANS_BEFORE, iv);
 		(*pdrawfunc) ();
+		QTRACE_SCAN (QT_SCAN_SPANS_AFTER, iv);
 
 	// flush the span list if we can't be sure we have enough spans left for
 	// the next scan
+		QTRACE_SCAN (QT_SCAN_FLUSH_CHECK, iv);
 		if (span_p >= max_span_p)
 		{
+			QTRACE (QT_FLUSH_UNLOCK, iv);
 			VID_UnlockBuffer ();
+			QTRACE (QT_FLUSH_UNLOCK_DONE, iv);
 			S_ExtraUpdate ();	// don't let sound get messed up if going slow
+			QTRACE (QT_FLUSH_SOUND_DONE, iv);
 			VID_LockBuffer ();
+			QTRACE (QT_FLUSH_LOCK_DONE, iv);
 		
 			if (r_drawculledpolys)
 			{
@@ -736,6 +1053,7 @@ void R_ScanEdges (void)
 			{
 				D_DrawSurfaces ();
 			}
+			QTRACE (QT_FLUSH_DRAW_DONE, iv);
 
 		// clear the surface span pointers
 			for (s = &surfaces[1] ; s<surface_p ; s++)
@@ -744,11 +1062,33 @@ void R_ScanEdges (void)
 			span_p = basespan_p;
 		}
 
+		QTRACE_SCAN (QT_SCAN_REMOVE_BEFORE, iv);
+#ifdef QTRACE_ENABLE
+		if (qtrace_step_debug && removeedges[iv])
+			QTraceCheckRemoveEdges (iv, removeedges[iv]);
+#endif
 		if (removeedges[iv])
 			R_RemoveEdges (removeedges[iv]);
+#ifdef QTRACE_ENABLE
+		if (qtrace_step_debug && removeedges[iv])
+			QTraceCheckActiveList (QEB_ACTIVE_AFTER_REMOVE);
+#endif
+		QTRACE_SCAN (QT_SCAN_REMOVE_AFTER, iv);
 
+		QTRACE_SCAN (QT_SCAN_STEP_BEFORE, iv);
 		if (edge_head.next != &edge_tail)
+		{
+#ifdef QTRACE_ENABLE
+			if (qtrace_step_debug)
+				QTraceCheckActiveList (QEB_ACTIVE_BEFORE_STEP);
+#endif
+#ifdef QTRACE_ENABLE
+			R_StepActiveU_Trace (edge_head.next);
+#else
 			R_StepActiveU (edge_head.next);
+#endif
+		}
+		QTRACE_SCAN (QT_SCAN_STEP_AFTER, iv);
 	}
 
 // do the last scan (no need to step or sort or remove on the last scan)
@@ -769,6 +1109,8 @@ void R_ScanEdges (void)
 		R_DrawCulledPolys ();
 	else
 		D_DrawSurfaces ();
+
+	QTRACE (QT_SCAN_EDGES_EXIT, r_framecount);
 }
 
 

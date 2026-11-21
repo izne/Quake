@@ -20,6 +20,11 @@ QRSQRT = -dUSE_FAST_INVERSE_SQRT
 #   Build with ASM: wmake -f Makefile all ASM386=1
 ASM386 =
 
+# QTRACE switch: temporary file-based renderer trace for stall diagnosis.
+#   Build with trace: wmake -f Makefile all ASM386=1 QTRACE=1
+# When QTRACE is not 1, all trace macros compile away and qtrace.obj is empty.
+QTRACE =
+
 # Base compiler flags: 486 target (-4), 4-byte struct packing, inline FPU,
 # DOS4GW target, full warnings (-wx), quiet (-zq).
 # -ei: enumerated types are int (4 bytes), matching the gcc/DJGPP build.
@@ -35,6 +40,10 @@ CFLAGS = -d2 $(CFLAGS_BASE)
 # (Watcom Make 1.9 uses !ifeq / !else / !endif; plain '=' reassignment.)
 !ifeq ASM386 1
 CFLAGS = $(CFLAGS) -DASM386=1
+!endif
+
+!ifeq QTRACE 1
+CFLAGS = $(CFLAGS) -DQTRACE_ENABLE=1
 !endif
 
 # Assembly flags
@@ -57,7 +66,7 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     sbar.c screen.c snd_dma.c snd_dos.c snd_mem.c &
     snd_mix.c sv_main.c sv_move.c sv_phys.c sv_user.c &
     sys_dos_wc.c vid_dos_wc.c vid_vga.c view.c wad.c &
-    world.c snd_gus.c zone.c in_dos.c vregset.c &
+    world.c snd_gus.c zone.c in_dos.c vregset.c qtrace.c &
 	net_main.c net_dos_wc.c	net_vcr.c net_loop.c &
 	dos_int86.c 
 
@@ -87,7 +96,7 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
      $(BUILDDIR)\sv_phys.obj $(BUILDDIR)\sv_user.obj $(BUILDDIR)\sys_dos_wc.obj &
      $(BUILDDIR)\vid_dos_wc.obj $(BUILDDIR)\vid_vga.obj $(BUILDDIR)\view.obj &
      $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
-     $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj &
+     $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj $(BUILDDIR)\qtrace.obj &
  	 $(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj &
  	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj
 

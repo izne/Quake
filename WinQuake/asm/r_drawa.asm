@@ -117,7 +117,7 @@ Lcliploop:
 
         mov     eax, [Ld0]
         mov     ecx, [Ld1]
-        or      eax, ecx
+        or      ecx, eax
         js      LC2
 
 Lcontinue:
@@ -203,7 +203,7 @@ LNZ2:
         mov     edx, edi
         mov     esi, [_r_pedge]
         add     edx, et_size
-        cmp     ecx, ebx
+        cmp     ebx, ecx
         jz      LPop5AndDone
         mov     eax, [_r_pedge]
         mov     [edi+et_owner], eax
@@ -281,7 +281,7 @@ LP5:
         mov     esi, [_newedges+ebx*4]
         test    esi, esi
         jz      LDoFirst
-        cmp     eax, [esi+et_u]
+        cmp     dword ptr [esi+et_u], eax
         jl      LNotFirst
 LDoFirst:
         mov     [edi+et_next], esi
@@ -293,7 +293,7 @@ LFindInsertLoop:
         mov     esi, [esi+et_next]
         test    esi, esi
         jz      LInsertFound
-        cmp     eax, [esi+et_u]
+        cmp     dword ptr [esi+et_u], eax
         jl      LFindInsertLoop
 LInsertFound:
         mov     [edi+et_next], esi

@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // snd_dma.c -- main control for any streaming sound output device
 
 #include "quakedef.h"
+#include "qtrace.h"
 
 #ifdef _WIN32
 #include "winquake.h"
@@ -492,6 +493,7 @@ void S_StartSound(int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float f
 		return;		// couldn't load the sound's data
 	}
 
+	QTRACE4 (QT_SND_START, (int)sfx, entnum, entchannel, sc->length);
 	target_chan->sfx = sfx;
 	target_chan->pos = 0.0;
     target_chan->end = paintedtime + sc->length;	

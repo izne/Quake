@@ -114,6 +114,8 @@ Lblockloop8_mip0:
         add     edx, ebp
         LOOKUP2 2, 3
         mov     [edi+12], eax
+        mov     bl, [esi+11]
+        mov     cl, [esi+10]
         mov     bh, dh
         add     edx, ebp
         mov     ch, dh
@@ -128,6 +130,8 @@ Lblockloop8_mip0:
         add     edx, ebp
         LOOKUP2 6, 7
         mov     [edi+8], eax
+        mov     bl, [esi+7]
+        mov     cl, [esi+6]
         mov     bh, dh
         add     edx, ebp
         mov     ch, dh
@@ -142,12 +146,19 @@ Lblockloop8_mip0:
         add     edx, ebp
         LOOKUP2 10, 11
         mov     [edi+4], eax
+        mov     bl, [esi+3]
+        mov     cl, [esi+2]
         mov     bh, dh
         add     edx, ebp
         mov     ch, dh
         add     edx, ebp
         LOOKUP2 12, 13
+        mov     bl, [esi+1]
+        mov     cl, [esi]
+        mov     bh, dh
+        add     edx, ebp
         ror     eax, 16
+        mov     ch, dh
         LOOKUP2 14, 15
         mov     edx, [_lightright]
         mov     ebp, [_lightdelta]
@@ -243,7 +254,10 @@ Lblockloop8_mip1:
         LOOKUP2 26, 27
         mov     bl, [esi+1]
         mov     cl, [esi]
+        mov     bh, dh
+        add     edx, ebp
         ror     eax, 16
+        mov     ch, dh
         LOOKUP2 28, 29
         mov     edx, [_lightright]
         mov     ebp, [_lightdelta]
@@ -390,6 +404,7 @@ Lv_loop_mip3:
         mov     [_lightrightstep], ecx
         sub     ebx, ecx
         and     ebx, 0FFFFFh
+        mov     [_lightdelta], ebp
         sar     ebp, 1
         or      ebx, 0F0000000h
         mov     [_lightdeltastep], ebx
@@ -462,6 +477,8 @@ R_Surf8End_:
 public R_Surf8Patch_
 R_Surf8Patch_ proc near
         push    ebx
+        push    ecx
+        push    edx
         mov     eax, [_colormap]
         mov     ebx, offset LPatchTable8
         mov     ecx, 32
@@ -471,6 +488,8 @@ LPatchLoop8:
         mov     [edx], eax
         dec     ecx
         jnz     LPatchLoop8
+        pop     edx
+        pop     ecx
         pop     ebx
         ret
 R_Surf8Patch_ endp

@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // snd_mix.c -- portable code to mix sounds for snd_dma.c
 
 #include "quakedef.h"
+#include "qtrace.h"
 
 #ifdef _WIN32
 #include "winquake.h"
@@ -78,6 +79,8 @@ void S_TransferStereo16 (int endtime)
 
 	snd_p = (int *) paintbuffer;
 	lpaintedtime = paintedtime;
+	QTRACE4 (QT_SND_XFER_ENTER, endtime, paintedtime, shm->samples,
+		(int)snd_vol);
 
 #ifdef _WIN32
 	if (pDSBuf)
@@ -122,6 +125,8 @@ void S_TransferStereo16 (int endtime)
 			snd_linear_count = endtime - lpaintedtime;
 
 		snd_linear_count <<= 1;
+		QTRACE4 (QT_SND_XFER_LOOP, lpos, snd_linear_count, (int)snd_p,
+			(int)snd_out);
 
 	// write a linear blast of samples
 		Snd_WriteLinearBlastStereo16 ();
@@ -129,6 +134,7 @@ void S_TransferStereo16 (int endtime)
 		snd_p += snd_linear_count;
 		lpaintedtime += (snd_linear_count>>1);
 	}
+	QTRACE (QT_SND_XFER_EXIT, lpaintedtime);
 
 #ifdef _WIN32
 	if (pDSBuf)
@@ -266,6 +272,7 @@ void S_PaintChannels(int endtime)
 	sfxcache_t	*sc;
 	int		ltime, count;
 
+	QTRACE (QT_SND_PAINT_ENTER, endtime);
 	while (paintedtime < endtime)
 	{
 	// if paintbuffer is smaller than DMA buffer
@@ -299,11 +306,15 @@ void S_PaintChannels(int endtime)
 
 				if (count > 0)
 				{	
+					QTRACE4 (QT_SND_CHAN_INFO, (int)ch, (int)sc, count,
+						ch->pos);
 					if (sc->width == 1)
 						SND_PaintChannelFrom8(ch, sc, count);
 					else
 						SND_PaintChannelFrom16(ch, sc, count);
-	
+
+					QTRACE4 (QT_SND_CHAN_DONE, (int)ch, ltime, count,
+						ch->pos);
 					ltime += count;
 				}
 
@@ -329,6 +340,7 @@ void S_PaintChannels(int endtime)
 		S_TransferPaintBuffer(end);
 		paintedtime = end;
 	}
+	QTRACE (QT_SND_PAINT_EXIT, paintedtime);
 }
 
 void SND_InitScaletable (void)
