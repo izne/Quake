@@ -70,65 +70,6 @@ renderer fallbacks. The final build has **zero C renderer helpers**.
 
 ---
 
-## The rollercoaster (bug hunt)
-
-Getting the ASM renderer clean took several iterations:
-
-1. **C renderer baseline** — correct but slow (~14 FPS vs stock 25.7 FPS in the
-   fixed-cycle DOSBox harness). The 1.8x gap was entirely the missing ASM.
-
-2. **First full-ASM build** — fast, but with garbled/black distant walls.
-
-3. **`r_edgea.asm`** — two label fall-throughs were mistranslated
-   (`LInsertAndExit` and `Lzcheck_for_newtop`). Fixed via a corrected file that
-   was differentially validated against the original GAS with 20,000 randomized
-   cases (0 mismatches). A C `R_GenerateSpans` fallback (`fd0e098`) served as a
-   safe checkpoint; the corrected ASM was restored in `cfa7ce3`.
-
-4. **Isolation** — a series of single-module builds narrowed the remaining
-   artifact down:
-   - `RUNWT` / C surface blocks: clean
-   - `RUNM` (no `math.asm`) and `RUNC` (no `r_drawa.asm`): still glitched
-   - `RUM3` / C mip3 only: **clean** — so the bug was specifically mip3 in
-     `asm\surf8.asm`
-
-5. **False leads** — a line-by-line audit declared the MASM mip3 faithful to
-   `surf8.s`, and arithmetic models showed 0 mismatches in 200,000 cases. A C
-   mip3 helper (`c_mips.c`, commit `7520e65`) fixed the image. Two attempted ASM
-   rewrites (`M3ASM`, `M3ASM2`) failed and made the damage worse.
-
-6. **Actual root cause** — an independent engineer compared the files with a
-   GAS-vs-MASM differential harness (20,000 cases: 3,758 mismatches with the
-   old file, 0 with the fix). Two AT&T-to-Intel operand orders were wrong at
-   the end of mip3:
-
-   ```asm
-   add  edx, esi     ; wrong  -- GAS: addl %edx,%esi
-   add  ebp, edi     ; wrong  -- GAS: addl %ebp,%edi
-
-   add  esi, edx     ; correct
-   add  edi, ebp     ; correct
-   ```
-
-   `esi` (source texture pointer) and `edi` (surface-cache destination) were
-   therefore never advanced at the end of each vblock. Distant surfaces were
-   rewritten into the same cache rows while the rest went stale. Single-vblock
-   surfaces looked fine, which is why the bug appeared only at distance.
-
-7. **Final fix** (`2f93464`) — applied the two-line correction, deleted
-   `c_mips.c`, removed `-d2`, and committed. The build is 18/18 ASM again,
-   qtrace compiled out, q_rsqrt on.
-
-### Why the early "19 FPS" was not real
-
-The broken mip3 was *faster* because it did less work: a small set of texels was
-rewritten into the same cache addresses instead of walking the whole surface,
-and large screen regions were served from stale cache. **16.4 FPS with full
-drawing enabled is the meaningful number**, not 19 FPS from a partially
-undrawn frame.
-
----
-
 ## Current builds and flags
 
 `WinQuake/Makefile`:
@@ -216,15 +157,6 @@ SHA-256 hashes:
 `dosbox_c.conf` mounts `C:\tmp\qtrace_run` and launches the chosen EXE with
 `+map e1m1`. Always verify the hash of the EXE actually launched before
 quoting a number.
-
----
-
-## Commit history (key milestones)
-
-- `fd0e098` — C `R_GenerateSpans` fallback (safe checkpoint)
-- `cfa7ce3` — corrected `r_edgea.asm`, full ASM renderer restored
-- `7520e65` — C mip3 helper (clean image, diagnostic)
-- `2f93464` — **final**: fixed mip3 pointer advance, removed C fallback, `-d2` off
 
 ---
 
