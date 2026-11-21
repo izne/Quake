@@ -739,7 +739,9 @@ void R_TrailingEdge (surf_t *surf, edge_t *edge)
 }
 
 
-#if	!id386
+// The ASM R_GenerateSpans/R_LeadingEdge translation emits incorrect spans.
+// Keep the C version linked until the ASM translation is fixed.
+#if	1
 
 /*
 ==============
