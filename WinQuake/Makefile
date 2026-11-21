@@ -33,8 +33,8 @@ QTRACE =
 #      model file readers (pframetype + 1 then advances 1 byte instead of 4).
 CFLAGS_BASE = -4 -ei -otexan -zp4 -fp5 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=.
 
-# Default build keeps debug info (-d2) for crash diagnosis
-CFLAGS = -d2 $(CFLAGS_BASE)
+# Release build: no debug info (-d2), matching the validated all-ASM build.
+CFLAGS = $(CFLAGS_BASE)
 
 # When ASM386=1, enable id386 in the C sources and select the asm objects.
 # (Watcom Make 1.9 uses !ifeq / !else / !endif; plain '=' reassignment.)
@@ -68,7 +68,7 @@ CSOURCES = cd_null.c chase.c cl_demo.c cl_input.c &
     sys_dos_wc.c vid_dos_wc.c vid_vga.c view.c wad.c &
     world.c snd_gus.c zone.c in_dos.c vregset.c qtrace.c &
 	net_main.c net_dos_wc.c	net_vcr.c net_loop.c &
-	dos_int86.c c_mips.c
+	dos_int86.c
 
 # Assembly source files - FP control / VGA helpers only
 ASMSOURCES = sys_dosa.s
@@ -98,7 +98,7 @@ COBJS = $(BUILDDIR)\cd_null.obj $(BUILDDIR)\chase.obj $(BUILDDIR)\cl_demo.obj &
      $(BUILDDIR)\wad.obj $(BUILDDIR)\world.obj $(BUILDDIR)\snd_gus.obj &
      $(BUILDDIR)\zone.obj $(BUILDDIR)\in_dos.obj $(BUILDDIR)\qtrace.obj &
  	 $(BUILDDIR)\net_main.obj $(BUILDDIR)\net_dos_wc.obj $(BUILDDIR)\net_vcr.obj $(BUILDDIR)\net_loop.obj &
- 	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj $(BUILDDIR)\c_mips.obj
+ 	 $(BUILDDIR)\dos_int86.obj $(BUILDDIR)\vregset.obj
 
 # Assembly object files
 AOBJS = $(BUILDDIR)\sys_dosa.obj
