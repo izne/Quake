@@ -133,33 +133,6 @@ in 86Box, so it was kept. Real-hardware validation is the next step.
 
 ---
 
-## Test artifacts and provenance
-
-All DOSBox test assets live in `C:\tmp\qtrace_run` (8.3 filenames):
-
-| File | Meaning |
-|---|---|
-| `RUNFINAL.BAT` -> `ASMFINAL.EXE` | final committed all-ASM build (aggressive flags) |
-| `RUNOPT.BAT` -> `OPTALL.EXE` | validated all-flags A/B build (code-identical to final) |
-| `FINAL.EXE` | safe C `R_GenerateSpans` fallback |
-| `PURE.EXE` | pure C renderer baseline |
-| `QUAKE.EXE` | stock id Software binary |
-| `archive\` | all diagnostic builds, BATs and configs |
-
-SHA-256 hashes:
-
-- `ASMFINAL.EXE` (aggressive flags, current final) — `1FA022603DC6DE1CEBF0A6ED4AED44F3C4FEE2D8C301999981CFA5E99D08B9DD`
-- `OPTALL.EXE` — `4522B9FABEA29A6A661D6F5203AD80C00D6BDD1B2DB5579DED84CD4AA557DD9E`
-  (same code, different build timestamp)
-- `ASMFINAL_164.EXE` (archived, earlier flag set) — `CADFD1F62D60A31FD51DB8B09C80588B46CD3BD7D262017484E22D0DEC694C73`
-- validated pre-final `M3FIX.EXE` (archived) — `AF3F4C6C9605A0D01B8E6C2E38A4DF444B215E077E78B5E136B65200F4029226`
-
-`dosbox_c.conf` mounts `C:\tmp\qtrace_run` and launches the chosen EXE with
-`+map e1m1`. Always verify the hash of the EXE actually launched before
-quoting a number.
-
----
-
 ## Building
 
 ```bat
