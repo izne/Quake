@@ -26,6 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define SKY_SPAN_SHIFT	5
 #define SKY_SPAN_MAX	(1 << SKY_SPAN_SHIFT)
 
+#ifdef SOLID_SKY
+extern byte	r_skycolor;
+#endif
+
 
 /*
 =================
@@ -64,6 +68,20 @@ D_DrawSkyScans8
 */
 void D_DrawSkyScans8 (espan_t *pspan)
 {
+#ifdef SOLID_SKY
+	byte			*pdest;
+	int				count;
+
+// Single-colour fill: no uv-to-st math, no two-layer texture lookup.
+	do
+	{
+		pdest = (byte *)d_viewbuffer + (screenwidth * pspan->v) + pspan->u;
+		count = pspan->count;
+		while (count-- > 0)
+			*pdest++ = r_skycolor;
+	} while ((pspan = pspan->pnext) != NULL);
+	return;
+#else
 	int				count, spancount, u, v;
 	unsigned char	*pdest;
 	fixed16_t		s, t, snext, tnext, sstep, tstep;
@@ -134,5 +152,6 @@ void D_DrawSkyScans8 (espan_t *pspan)
 		} while (count > 0);
 
 	} while ((pspan = pspan->pnext) != NULL);
+#endif
 }
 

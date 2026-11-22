@@ -31,6 +31,7 @@ float	skyspeed, skyspeed2;
 float		skytime;
 
 byte		*r_skysource;
+byte		r_skycolor;			// sampled once from r_skysource for SOLID_SKY builds
 
 int r_skymade;
 int r_skydirect;		// not used?
@@ -150,6 +151,10 @@ void R_MakeSky (void)
 	}
 
 	r_skymade = 1;
+
+// Sample one representative texel from the finished sky texture so
+// SOLID_SKY builds can fill spans with a single colour at zero per-pixel cost.
+	r_skycolor = r_skysource[(64 << 8) + 64];
 }
 
 

@@ -86,6 +86,11 @@ QRSQRT      = -dUSE_FAST_INVERSE_SQRT
 Release builds omit `-d2`. `-5`/`-6` are deliberately avoided (Pentium/PPro
 targets).
 
+`CPU=486` is an opt-in build that takes `math`, `d_draw`, `d_draw16` and
+`d_polysa` from `asm\486\` into a separate `build_486` directory; plain builds
+are unchanged. `SKY=0` additionally replaces the C two-layer sky mapper with a
+single-colour span fill — a performance option, off by default.
+
 These flags are the result of an A/B against the earlier `-4 -otexan -fp5` set:
 explicit 486 register calling convention (`-4r`), a speed-only optimiser set
 with `-h` (expensive opts) and `-k` (prologue/epilogue in flow graph), 387 FPU

@@ -136,6 +136,14 @@ LINKFLAGS = system dos4g option map=q486opt.map option eliminate option stack=25
 ASMDIR    = asm
 !endif
 
+# Textured sky is the default. SKY=0 opts into a one-colour sky fill instead
+# of the C two-layer texture mapper, for a CPU=486 performance-mode build.
+!ifeq CPU 486
+!ifeq SKY 0
+CFLAGS = $(CFLAGS) -DSOLID_SKY
+!endif
+!endif
+
 # Quake1 deployment directory
 QUAKEDIR = C:\Users\izne\Downloads\_Quake1
 
