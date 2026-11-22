@@ -175,7 +175,7 @@ $(BUILDDIR)\snd_mixa.obj: asm\snd_mixa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\math.obj:     $(ASMDIR)\math.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_polysa.obj: asm\d_polysa.asm
+$(BUILDDIR)\d_polysa.obj: $(ASMDIR)\d_polysa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_draw.obj:   $(ASMDIR)\d_draw.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
