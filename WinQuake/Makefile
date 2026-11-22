@@ -124,6 +124,18 @@ ALL_OBJS = $(COBJS) $(AOBJS)
 # Target executable
 TARGET = quake486.exe
 
+# CPU switch: CPU=486 selects the 486-optimized ASM modules from asm\486\.
+# Unset/BASE keeps the original portable asm\*.asm modules. CPU-specific
+# builds use their own BUILDDIR and TARGET so objects never get mixed.
+!ifeq CPU 486
+ASMDIR    = asm\486
+BUILDDIR  = build_486
+TARGET    = q486opt.exe
+LINKFLAGS = system dos4g option map=q486opt.map option eliminate option stack=256k
+!else
+ASMDIR    = asm
+!endif
+
 # Quake1 deployment directory
 QUAKEDIR = C:\Users\izne\Downloads\_Quake1
 
@@ -161,13 +173,13 @@ $(BUILDDIR)\d_varsa.obj:  asm\d_varsa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\snd_mixa.obj: asm\snd_mixa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\math.obj:     asm\math.asm
+$(BUILDDIR)\math.obj:     $(ASMDIR)\math.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_polysa.obj: asm\d_polysa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_draw.obj:   asm\d_draw.asm
+$(BUILDDIR)\d_draw.obj:   $(ASMDIR)\d_draw.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_draw16.obj: asm\d_draw16.asm
+$(BUILDDIR)\d_draw16.obj: $(ASMDIR)\d_draw16.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_copy.obj:   asm\d_copy.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<

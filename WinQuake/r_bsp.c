@@ -446,6 +446,12 @@ void R_DrawSubmodelPolygons (model_t *pmodel, int clipflags)
 R_RecursiveWorldNode
 ================
 */
+typedef union
+{
+	double		d;
+	unsigned int	u[2];			/* little-endian: u[1] holds the sign/exponent */
+} dblbits_t;
+
 void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 {
 	int			i, c, side, *pindex;
@@ -453,7 +459,8 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 	mplane_t	*plane;
 	msurface_t	*surf, **mark;
 	mleaf_t		*pleaf;
-	double		d, dot;
+	double		dot;
+	dblbits_t	db;
 
 	QTRACE_RATE (QT_BSP_NODE, clipflags, 64);
 
@@ -483,20 +490,23 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 			rejectpt[1] = (float)node->minmaxs[pindex[1]];
 			rejectpt[2] = (float)node->minmaxs[pindex[2]];
 			
-			d = DotProduct (rejectpt, view_clipplanes[i].normal);
-			d -= view_clipplanes[i].dist;
+			db.d = DotProduct (rejectpt, view_clipplanes[i].normal);
+			db.d -= view_clipplanes[i].dist;
 
-			if (d <= 0)
+		// integer sign/magnitude test for d <= 0, avoiding the
+		// fcomp/fnstsw/sahf chain. Exact for +/-0 as well.
+			if ( !(db.u[1] < 0x80000000u && (db.u[1] | db.u[0]) != 0) )
 				return;
 
 			acceptpt[0] = (float)node->minmaxs[pindex[3+0]];
 			acceptpt[1] = (float)node->minmaxs[pindex[3+1]];
 			acceptpt[2] = (float)node->minmaxs[pindex[3+2]];
 
-			d = DotProduct (acceptpt, view_clipplanes[i].normal);
-			d -= view_clipplanes[i].dist;
+			db.d = DotProduct (acceptpt, view_clipplanes[i].normal);
+			db.d -= view_clipplanes[i].dist;
 
-			if (d >= 0)
+		// integer sign/magnitude test for d >= 0
+			if (db.u[1] < 0x80000000u || (db.u[1] & 0x7FFFFFFFu) == 0)
 				clipflags &= ~(1<<i);	// node is entirely on screen
 		}
 	}
