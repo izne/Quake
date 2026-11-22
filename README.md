@@ -129,12 +129,14 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 | Build | FPS |
 |---|---|
 | Final all-ASM, original flags (`ASMFINAL_164.EXE`, archived) | 16.4 |
-| All-ASM, aggressive 486 flags (`OPTALL.EXE` / current `ASMFINAL.EXE`) | **16.6** |
+| All-ASM, aggressive 486 flags (`OPTALL.EXE` / current `ASMFINAL.EXE`) | 16.6 |
+| `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | **16.8** |
 | Stock `QUAKE.EXE` | **16.3** |
 
-Effectively stock parity, possibly a hair faster. The 0.3 FPS gap between the
-two flag sets is small, but the aggressive set was clean in DOSBox and faster
-in 86Box, so it was kept. Real-hardware validation is the next step.
+Progressively faster than stock in the same 86Box config. Each step was checked
+in DOSBox first; the draw-file optimization added a further ~0.2 FPS. These are
+small margins and real-hardware validation on the Am5x86 is still the decisive
+test.
 
 ---
 

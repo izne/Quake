@@ -1,28 +1,14 @@
 ;=============================================================================
 ; d_draw.asm - x86 assembly-language horizontal 8-bpp span-drawing code
 ;
-; Faithful MASM (OpenWatcom wasm) translation of WinQuake/d_draw.s.
+; 486 / AMD Am5x86 optimized MASM (OpenWatcom wasm) version.
 ; Two routines + 7 entry points:
 ;   D_DrawSpans8   (arg EAX = espan_t *pspans) - textured spans
 ;   Entry2_8 .. Entry8_8 - jump targets for last-segment pixel counts
 ;   D_DrawZSpans   (arg EAX = espan_t *pzspans) - z-buffer spans
 ;
-; Calling convention (Watcom 32-bit register ABI, verified by probe):
+; Calling convention (Watcom 32-bit register ABI):
 ;   EAX volatile; EBX/ECX/EDX/ESI/EDI/EBP callee-saved -> all preserved.
-;   C data: leading underscore (_d_sdivzstepu). ASM-only: plain (fp_8, pbase).
-;
-; gas mangled names like _d_sdivzstepu) are C(d_sdivzstepu) artifacts -> plain.
-;
-; FPU mapping (derived from stack comments, verified in d_polysa/math.asm):
-;   faddp %st(0),%st(N) -> faddp st(N),st(0)
-;   fdivr %st(0),%st(1) -> fdiv   st(1),st(0)   (st1 = st1/st0)
-;   fdiv  %st(1),%st(0) -> fdiv   st(0),st(1)   (st0 = st0/st1)
-;   fmul  %st(a),%st(0) -> fmul   st(0),st(a)
-;   fcoms mem           -> fcom   dword ptr [mem]   (no pop)
-;
-; 486 OPTIMIZATIONS applied (see OPT notes inline):
-;   - Z-span dword packing uses SHLD+ROR instead of MOV+AND+OR, eliminating
-;     the scratch regs the original flagged with 'FIXME: register contention'.
 ;=============================================================================
 
 .386
@@ -111,6 +97,8 @@ LClampHigh5:
 ;=============================================================================
 ; D_DrawSpans8_  (was: _D_DrawSpans8)  -- 8-bpp textured spans
 ; C: void D_DrawSpans8(espan_t *pspans)  -- pspans in EAX
+; 486 / Am5x86 optimized: sequential s/z, t/z, 1/z setup (1 fxch vs 13) and
+; reversed [t]/[s] fistp store order (0 fxch vs 8).
 ;=============================================================================
 D_DrawSpans8_ proc near
         push    ebp
@@ -135,38 +123,39 @@ D_DrawSpans8_ proc near
         fstp    dword ptr [sdivz8stepu]
 
 LSpanLoop:
-; initial s/z, t/z, 1/z on FP stack; generate initial s and t
-        fild    dword ptr [ebx+espan_t_v]
-        fild    dword ptr [ebx+espan_t_u]
+; initial s/z, t/z, 1/z on FP stack (1 fxch instead of 13!)
+        fild    dword ptr [ebx+espan_t_u]    ; du
+        fild    dword ptr [ebx+espan_t_v]    ; dv | du
 
-        fld     st(1)                        ; dv | du | dv
-        fmul    dword ptr [_d_sdivzstepv]
-        fld     st(1)                        ; du | dv*sstepv | du | dv
-        fmul    dword ptr [_d_sdivzstepu]
-        fld     st(2)                        ; du | du*sstepu | dv*sstepv | du | dv
-        fmul    dword ptr [_d_tdivzstepu]
-        fxch    st(1)                        ; du*sstepu | du*tstepu | dv*sstepv | du | dv
-        faddp   st(2), st(0)                 ; du*tstepu | du*sstepu+dv*sstepv | du | dv
-        fxch    st(1)                        ; du*sstepu+dv*sstepv | du*tstepu | du | dv
-        fld     st(3)                        ; dv | ...
-        fmul    dword ptr [_d_tdivzstepv]
-        fxch    st(1)                        ; du*sstepu+dv*sstepv | dv*tstepv | du*tstepu | du | dv
-        fadd    dword ptr [_d_sdivzorigin]   ; s/z stays in st(2)
-        fxch    st(4)                        ; dv | dv*tstepv | du*tstepu | du | s/z
-        fmul    dword ptr [_d_zistepv]
-        fxch    st(1)                        ; dv*tstepv | dv*zstepv | du*tstepu | du | s/z
-        faddp   st(2), st(0)                 ; dv*zstepv | dv*tstepv+du*tstepu | du | s/z
-        fxch    st(2)                        ; du | dv*tstepv+du*tstepu | dv*zstepv | s/z
-        fmul    dword ptr [_d_zistepu]
-        fxch    st(1)                        ; dv*tstepv+du*tstepu | du*zstepu | dv*zstepv | s/z
-        fadd    dword ptr [_d_tdivzorigin]   ; t/z stays in st(1)
-        fxch    st(2)                        ; dv*zstepv | du*zstepu | t/z | s/z
-        faddp   st(1), st(0)                 ; dv*zstepv+du*zstepu | t/z | s/z
+; 1. Compute s/z -> stack: s/z | dv | du
+        fld     st(1)                        ; du | dv | du
+        fmul    dword ptr [_d_sdivzstepu]    ; du*su | dv | du
+        fld     st(1)                        ; dv | du*su | dv | du
+        fmul    dword ptr [_d_sdivzstepv]    ; dv*sv | du*su | dv | du
+        faddp   st(1), st(0)                 ; s_part | dv | du
+        fadd    dword ptr [_d_sdivzorigin]   ; s/z | dv | du
 
-        fld     dword ptr [fp_64k]           ; 64k | zi_part | t/z | s/z
-        fxch    st(1)                        ; zi_part | 64k | t/z | s/z
-        fadd    dword ptr [_d_ziorigin]      ; zi (1/z) in st0
-        fdiv    st(1), st(0)                 ; st1 = 64k / (1/z) = z*64k
+; 2. Compute t/z -> stack: t/z | s/z | dv | du
+        fld     st(2)                        ; du | s/z | dv | du
+        fmul    dword ptr [_d_tdivzstepu]    ; du*tu | s/z | dv | du
+        fld     st(2)                        ; dv | du*tu | s/z | dv | du
+        fmul    dword ptr [_d_tdivzstepv]    ; dv*tv | du*tu | s/z | dv | du
+        faddp   st(1), st(0)                 ; t_part | s/z | dv | du
+        fadd    dword ptr [_d_tdivzorigin]   ; t/z | s/z | dv | du
+
+; 3. Compute 1/z consuming du and dv -> stack: 1/z | t/z | s/z
+        fld     st(3)                        ; du | t/z | s/z | dv | du
+        fmul    dword ptr [_d_zistepu]       ; du*zu | t/z | s/z | dv | du
+        fadd    dword ptr [_d_ziorigin]      ; du*zu+zi0 | t/z | s/z | dv | du
+        fstp    st(4)                        ; t/z | s/z | dv | 1/z_part
+        fld     st(2)                        ; dv | t/z | s/z | dv | 1/z_part
+        fmul    dword ptr [_d_zistepv]       ; dv*zv | t/z | s/z | dv | 1/z_part
+        faddp   st(4), st(0)                 ; t/z | s/z | dv | 1/z
+        fstp    st(2)                        ; s/z | t/z | 1/z (overwrites dv & pops t/z)
+        fxch    st(2)                        ; 1/z | t/z | s/z
+
+        fld     dword ptr [fp_64k]           ; 64k | 1/z | t/z | s/z
+        fdiv    st(0), st(1)                 ; z*64k | 1/z | t/z | s/z
 
 ; point edi to first pixel in the span
         mov     ecx, [_d_viewbuffer]
@@ -181,20 +170,19 @@ LSpanLoop:
         mov     ecx, [ebx+espan_t_count]
 
 ; start the FDIV for the end of the span (overlap with integer work)
+; Stack here: st(0) = z*64k, st(1) = 1/z, st(2) = t/z, st(3) = s/z
         cmp     ecx, 8
         ja      LSetupNotLast1
         dec     ecx
         jz      LCleanup1                    ; one pixel: no FDIV needed
         mov     [spancountminus1], ecx
 
-        fxch    st(1)                        ; z*64k | 1/z | t/z | s/z
-        fld     st(0)
-        fmul    st(0), st(4)                 ; s | z*64k | 1/z | t/z | s/z
-        fxch    st(1)
-        fmul    st(0), st(3)                 ; t | s | 1/z | t/z | s/z
-        fxch    st(1)
-        fistp   dword ptr [s]                ; 1/z | t | t/z | s/z
-        fistp   dword ptr [t]
+        ; Extract t then s directly (0 fxch!)
+        fld     st(0)                        ; z*64k | z*64k | 1/z | t/z | s/z
+        fmul    st(0), st(3)                 ; t | z*64k | 1/z | t/z | s/z
+        fistp   dword ptr [t]                ; z*64k | 1/z | t/z | s/z
+        fmul    st(0), st(3)                 ; s | 1/z | t/z | s/z
+        fistp   dword ptr [s]                ; 1/z | t/z | s/z
 
         fild    dword ptr [spancountminus1]
         fld     dword ptr [_d_tdivzstepu]
@@ -215,26 +203,22 @@ LSpanLoop:
         jmp     LFDIVInFlight1
 
 LCleanup1:
-        fxch    st(1)
+        ; Extract t then s directly (0 fxch!)
         fld     st(0)
-        fmul    st(0), st(4)
-        fxch    st(1)
-        fmul    st(0), st(3)
-        fxch    st(1)
-        fistp   dword ptr [s]
+        fmul    st(0), st(3)                 ; t
         fistp   dword ptr [t]
+        fmul    st(0), st(3)                 ; s
+        fistp   dword ptr [s]
         jmp     LFDIVInFlight1
 
         ALIGN 4
 LSetupNotLast1:
-        fxch    st(1)
+        ; Extract t then s directly (0 fxch!)
         fld     st(0)
-        fmul    st(0), st(4)
-        fxch    st(1)
-        fmul    st(0), st(3)
-        fxch    st(1)
-        fistp   dword ptr [s]
+        fmul    st(0), st(3)                 ; t
         fistp   dword ptr [t]
+        fmul    st(0), st(3)                 ; s
+        fistp   dword ptr [s]
 
         fadd    dword ptr [zi8stepu]
         fxch    st(2)
@@ -280,13 +264,12 @@ LClampReentry1:
 
 ; not the last segment; do full 8-wide segment
 LNotLastSegment:
-        fld     st(0)                        ; pick up FDIV result
-        fmul    st(0), st(4)                 ; s = s/z * z
-        fxch    st(1)
-        fmul    st(0), st(3)                 ; t = t/z * z
-        fxch    st(1)
-        fistp   dword ptr [snext]
-        fistp   dword ptr [tnext]
+        ; Extract tnext then snext directly (0 fxch!)
+        fld     st(0)                        ; z | z | zi | t/z | s/z
+        fmul    st(0), st(3)                 ; t | z | zi | t/z | s/z
+        fistp   dword ptr [tnext]            ; z | zi | t/z | s/z
+        fmul    st(0), st(3)                 ; s | zi | t/z | s/z
+        fistp   dword ptr [snext]            ; zi | t/z | s/z
         mov     eax, [snext]
         mov     edx, [tnext]
 
@@ -448,13 +431,12 @@ LLastSegment:
         test    ecx, ecx
         jz      LNoSteps
 
+        ; Extract tnext then snext directly (0 fxch!)
         fld     st(0)
-        fmul    st(0), st(4)
-        fxch    st(1)
         fmul    st(0), st(3)
-        fxch    st(1)
-        fistp   dword ptr [snext]
         fistp   dword ptr [tnext]
+        fmul    st(0), st(3)
+        fistp   dword ptr [snext]
 
         mov     al, [esi]                    ; first texel in segment
         mov     ebx, [_tadjust]
@@ -648,8 +630,8 @@ D_DrawSpans8_ endp
 ;=============================================================================
 ; D_DrawZSpans_  (was: _D_DrawZSpans)  -- z-buffer spans
 ; C: void D_DrawZSpans(espan_t *pzspans)  -- pzspans in EAX
+; 486 / Am5x86 optimized: 0 fxch in span setup (down from 4 across both paths).
 ;=============================================================================
-; z-clamp on a non-negative gradient span
 LClamp:
         mov     edx, 040000000h
         xor     ebx, ebx
@@ -681,17 +663,15 @@ D_DrawZSpans_ proc near
         mov     ebx, [izistep]
 
 LFSpanLoop:
-        fild    dword ptr [esi+espan_t_v]
         fild    dword ptr [esi+espan_t_u]
+        fmul    dword ptr [_d_zistepu]
+        fild    dword ptr [esi+espan_t_v]
+        fmul    dword ptr [_d_zistepv]
         mov     ecx, [esi+espan_t_v]
         mov     edi, [_d_pzbuffer]
-        fmul    dword ptr [_d_zistepu]
-        fxch    st(1)
-        fmul    dword ptr [_d_zistepv]
-        fxch    st(1)
-        fadd    dword ptr [_d_ziorigin]
-        imul    ecx, [_d_zrowbytes]
         faddp   st(1), st(0)
+        imul    ecx, [_d_zrowbytes]
+        fadd    dword ptr [_d_ziorigin]
 
         fcom    dword ptr [float_point5]
         add     edi, ecx
@@ -728,7 +708,7 @@ LFMiddle:
         shr     ecx, 1
         jnc     LFMiddleLoop
 
-; odd number of dwords: do one first (cold path - keep original and/or)
+; odd number of dwords: do one first (cold path)
         mov     eax, edx
         add     edx, ebx
         shr     eax, 16
@@ -742,8 +722,6 @@ LFMiddle:
         jz      LFLast
 
 LFMiddleLoop:
-; 486 OPT: pack two 16-bit z values per dword via SHLD+ROR, avoiding the
-; MOV/AND/OR scratch chain (original's 'FIXME: register contention').
         mov     eax, edx                 ; v0
         add     edx, ebx                 ; v1
         shr     eax, 16                  ; low word = v0>>16
@@ -785,17 +763,15 @@ LFNegSpan:
         mov     ebx, [izistep]
 
 LFNegSpanLoop:
-        fild    dword ptr [esi+espan_t_v]
         fild    dword ptr [esi+espan_t_u]
+        fmul    dword ptr [_d_zistepu]
+        fild    dword ptr [esi+espan_t_v]
+        fmul    dword ptr [_d_zistepv]
         mov     ecx, [esi+espan_t_v]
         mov     edi, [_d_pzbuffer]
-        fmul    dword ptr [_d_zistepu]
-        fxch    st(1)
-        fmul    dword ptr [_d_zistepv]
-        fxch    st(1)
-        fadd    dword ptr [_d_ziorigin]
-        imul    ecx, [_d_zrowbytes]
         faddp   st(1), st(0)
+        imul    ecx, [_d_zrowbytes]
+        fadd    dword ptr [_d_ziorigin]
 
         fcom    dword ptr [float_point5]
         add     edi, ecx
@@ -842,7 +818,6 @@ LFNegMiddle:
         jz      LFNegLast
 
 LFNegMiddleLoop:
-; 486 OPT: SHLD+ROR packing (negative step variant)
         mov     eax, edx
         sub     edx, ebx
         shr     eax, 16
@@ -885,35 +860,5 @@ LFDone:
         pop     ebp
         ret
 D_DrawZSpans_ endp
-
-;=============================================================================
-; Translation notes:
-;
-; 1. CALLING CONVENTION: Watcom register ABI. Both functions take one pointer
-;    arg in EAX; all callee-saved regs (EBX/ECX/EDX/ESI/EDI/EBP) preserved.
-;    The original's stack arg at pspans(%esp)=[esp+20] is replaced with EAX->EBX.
-;
-; 2. FPU: FDIV-overlap structure preserved exactly. gas fdiv/fdivr two-reg
-;    forms reversed per AT&T->Intel (fdivr %st(0),%st(1) -> fdiv st(1),st(0)).
-;
-; 3. 486 OPT (Z-span inner loops): original packed two 16-bit z values into a
-;    dword using 'mov edx,esi; and esi,0FFFF0000h; or eax,esi' and carried two
-;    scratch regs (esi/ebp) - explicitly flagged 'FIXME: eliminate register
-;    contention'. Replaced with SHLD+ROR: 'shld eax,edx,16; ror eax,16' packs
-;    the same two values with no scratch regs and one fewer uop. Verified
-;    bit-exact against a C oracle over 9 cases (positive/negative gradients,
-;    aligned/unaligned starts, odd/even counts, clamping). SHLD is 386+ / fast
-;    on 486.
-;
-; 4. VERIFICATION: D_DrawZSpans fully functionally verified (9 cases). All FPU
-;    operand encodings cross-checked via disassembly + focused tests: gas AT&T
-;    'fdivr %st(0),%st(1)' -> MASM 'fdiv st(1),st(0)' (st1=st1/st0), and gas
-;    'fdiv %st(1),%st(0)' -> MASM 'fdiv st(0),st(1)' (st0=st0/st1). D_DrawSpans8's
-;    full pixel pipeline needs the engine's exact cache/span state to exercise,
-;    but its FPU sequences use the same mappings verified in math/d_polysa.
-;
-; 5. ALIGN: gas '.align 4' = 16-byte align; WASM here uses ALIGN 4 (segment
-;    alignment limit in this toolchain) - correctness-neutral fetch hint.
-;=============================================================================
 
 end
