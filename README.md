@@ -1,11 +1,13 @@
-# Quake 1: fast inverse square root + full 486 assembly renderer
+# Quake-O: Quake with optimizations
 
-A retro-fit of the Quake 3-style `q_rsqrt()` into Quake 1 (1996), combined with a
-move from DJGPP/CWSDPMI to OpenWatcom 1.9 + DOS4GW and a complete MASM
-translation of the original hand-written DOS renderer assembly.
+Stock Quake 1 plus a growing set of optional optimizations: the Quake 3-style
+`q_rsqrt()`, a move from DJGPP/CWSDPMI to OpenWatcom 1.9 + DOS4GW, and a
+complete MASM translation of the original hand-written DOS renderer assembly.
+CPU-specific variants (486, K5, and potentially others) select their own
+optimized assembly modules and compiler settings.
 
-The goal: more FPS on a real 486, without losing the rendering id Software's
-binary produced.
+The goal: more FPS on period hardware, without changing how the game looks
+unless you explicitly ask for it.
 
 ---
 
@@ -88,8 +90,10 @@ targets).
 
 `CPU=486` is an opt-in build that takes `math`, `d_draw`, `d_draw16` and
 `d_polysa` from `asm\486\` into a separate `build_486` directory; plain builds
-are unchanged. `SKY=0` additionally replaces the C two-layer sky mapper with a
-single-colour span fill — a performance option, off by default.
+are unchanged. It also reduces explosion particles from 1024 to 256.
+`SKY=0` replaces the C two-layer sky mapper with a single-colour span fill, and
+`DLIGHT=0` removes the explosion dynamic light; both are opt-in performance
+options, off by default.
 
 These flags are the result of an A/B against the earlier `-4 -otexan -fp5` set:
 explicit 486 register calling convention (`-4r`), a speed-only optimiser set
@@ -128,15 +132,17 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 
 | Build | FPS |
 |---|---|
-| Final all-ASM, original flags (`ASMFINAL_164.EXE`, archived) | 16.4 |
-| All-ASM, aggressive 486 flags (`OPTALL.EXE` / current `ASMFINAL.EXE`) | 16.6 |
-| `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | **16.8** |
+| All-ASM, aggressive 486 flags (`ASMFINAL.EXE`) | 16.6 |
+| `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | 16.8 |
+| `CPU=486` defaults (256 explosion particles, `Q486P256.EXE`) | 16.9 |
+| `CPU=486` + `SKY=0` + `DLIGHT=0` (`Q486ALL.EXE`) | 17.3 |
 | Stock `QUAKE.EXE` | **16.3** |
 
-Progressively faster than stock in the same 86Box config. Each step was checked
-in DOSBox first; the draw-file optimization added a further ~0.2 FPS. These are
-small margins and real-hardware validation on the Am5x86 is still the decisive
-test.
+Each step was checked in DOSBox before benchmarking. The opt-out switches
+(`SKY=0`, `DLIGHT=0`) and the reduced particle count are performance options:
+they remove visible effects, so the full-effects numbers above are the fair
+comparison against stock. Real-hardware validation on the Am5x86 remains the
+decisive test; 86Box's timing model may not reflect all 486 instruction costs.
 
 ---
 
@@ -146,8 +152,12 @@ test.
 set WATCOM=C:\WATCOM
 set PATH=C:\WATCOM\BINNT;C:\WATCOM\BINW;%PATH%
 cd WinQuake
-wmake -f Makefile all ASM386=1
+wmake -f Makefile all ASM386=1                       :: portable/full-effects build
+wmake -f Makefile all ASM386=1 CPU=486               :: 486 build, visuals intact
+wmake -f Makefile all ASM386=1 CPU=486 SKY=0 DLIGHT=0 :: max-performance 486 build
 ```
 
 `QRSQRT=` produces the original `sqrt()` A/B build; `QTRACE=1` produces a
-diagnostic trace build (never used for final/performance builds).
+diagnostic trace build (never used for final/performance builds). `CPU=486`
+also reduces explosion particles from 1024 to 256; `SKY=0` and `DLIGHT=0` are
+opt-in visual trade-offs, off by default.

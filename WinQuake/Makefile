@@ -136,11 +136,15 @@ LINKFLAGS = system dos4g option map=q486opt.map option eliminate option stack=25
 ASMDIR    = asm
 !endif
 
-# Textured sky is the default. SKY=0 opts into a one-colour sky fill instead
-# of the C two-layer texture mapper, for a CPU=486 performance-mode build.
+# CPU=486 performance defaults: textured sky stays the default (SKY=0 opts
+# into a flat fill); explosion particles are reduced from 1024 to 256.
 !ifeq CPU 486
+CFLAGS = $(CFLAGS) -DREDUCED_EXPLOSION_PARTICLES
 !ifeq SKY 0
 CFLAGS = $(CFLAGS) -DSOLID_SKY
+!endif
+!ifeq DLIGHT 0
+CFLAGS = $(CFLAGS) -DNO_EXPLOSION_DLIGHT
 !endif
 !endif
 

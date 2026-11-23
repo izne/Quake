@@ -279,7 +279,11 @@ void R_ParticleExplosion (vec3_t org)
 	int			i, j;
 	particle_t	*p;
 	
+#ifdef REDUCED_EXPLOSION_PARTICLES
+	for (i=0 ; i<256 ; i++)
+#else
 	for (i=0 ; i<1024 ; i++)
+#endif
 	{
 		if (!free_particles)
 			return;
