@@ -31,7 +31,9 @@ QTRACE =
 #      Watcom's default is smallest-enum (1 byte), which shrinks structs like
 #      daliasframetype_t/daliasskintype_t and desynchronises the alias/sprite
 #      model file readers (pframetype + 1 then advances 1 byte instead of 4).
-CFLAGS_BASE = -4r -ei -otabehiklmnr -zp4 -fp3 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=. -zri -zdl
+CPUCFLAGS   = -4r -fp3
+ASMTARGET   = -4
+CFLAGS_BASE = $(CPUCFLAGS) -ei -otabehiklmnr -zp4 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=. -zri -zdl
 
 # Release build: no debug info (-d2), matching the validated all-ASM build.
 CFLAGS = $(CFLAGS_BASE)
@@ -47,7 +49,7 @@ CFLAGS = $(CFLAGS) -DQTRACE_ENABLE=1
 !endif
 
 # Assembly flags
-ASMFLAGS = -4 -fp5 -mf -bt=dos
+ASMFLAGS = $(ASMTARGET) -fp5 -mf -bt=dos
 
 # Linker flags for DOS4GW extender
 LINKFLAGS = system dos4g option map=quake486.map option eliminate option stack=256k
@@ -133,7 +135,16 @@ BUILDDIR  = build_486
 TARGET    = q486opt.exe
 LINKFLAGS = system dos4g option map=q486opt.map option eliminate option stack=256k
 !else
+!ifeq CPU K5
+ASMDIR    = asm\K5
+BUILDDIR  = build_k5
+TARGET    = quakek5.exe
+LINKFLAGS = system dos4g option map=quakek5.map option eliminate option stack=256k
+CPUCFLAGS = -5r -fp5
+ASMTARGET = -5
+!else
 ASMDIR    = asm
+!endif
 !endif
 
 # CPU=486 performance defaults: textured sky stays the default (SKY=0 opts

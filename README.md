@@ -13,14 +13,39 @@ unless you explicitly ask for it.
 
 ## Test hardware
 
+**486 / Am5x86 (X5):**
+
 - AMD Am5x86-X5 @ 160 MHz (4x40 MHz FSB)
 - 16 MB EDO 70 ns, 256 KB L2
 - Matrox Millenium 2 (PCI)
 - Reference: **stock Quake 1.06 = 14.4 FPS** on this machine
+- 86Box result, stock vs full-effects `CPU=486`: 16.3 vs 16.8 FPS
 
-An 86Box configuration modelling the same machine is used for repeatable A/B
-runs. DOSBox is used first for visual validation; 86Box only after rendering is
-known clean.
+**K5:**
+
+- AMD K5 with the same Matrox Millenium 2 and 16 MB RAM
+- Reference: stock Quake with the original Pentium-scheduled asm = 22.2 FPS
+- All Watcom builds, with or without K5-specific assembly, score 23.3 FPS:
+  the +1.1 comes from the changes shared by every build (q_rsqrt and the
+  Watcom C path), not from K5 tuning
+- K5-specific modules live in `asm\K5\` and are selected with `CPU=K5`
+
+**K5 negative result:** zero-`fxch` math, converted span drawers, genuine
+16-byte loop alignment, `-5r -fp5`, and an A/B with `-5r -fp3 -oaxt` all
+scored exactly the same 23.3 FPS on real hardware. An RDTSC microbenchmark on
+the K5 confirmed why: cycles/call for original vs K5 code were
+`TransformVector` 68 vs 69, `BoxOnPlaneSide` 75 vs 71, and `D_DrawZSpans`
+5903 vs 6014 — two of three routines are slightly *slower* after the rewrite,
+and the third saves only 4 cycles in a routine that is not per-frame hot.
+The frame is limited by something other than the instruction scheduling we
+changed; `asm\K5\` is kept as an option, not as a measured win.
+Instruction-scheduling work for K5 is considered maxed out — any further gain
+there must come from structural changes, not more `fxch`/alignment/flag tuning.
+
+An 86Box configuration is used for repeatable A/B runs on both machines.
+DOSBox is used first for visual validation; 86Box only after rendering is
+known clean. Real-hardware validation on either machine is still the decisive
+test for cycle-level optimizations.
 
 ---
 
@@ -77,23 +102,29 @@ renderer fallbacks. The final build has **zero C renderer helpers**.
 `WinQuake/Makefile`:
 
 ```make
-CFLAGS_BASE = -4r -ei -otabehiklmnr -zp4 -fp3 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=. -zri -zdl
-ASMFLAGS    = -4 -fp5 -mf -bt=dos
+CPUCFLAGS   = -4r -fp3          # overridden to -5r -fp5 by CPU=K5
+ASMTARGET   = -4                # overridden to -5 by CPU=K5
+CFLAGS_BASE = $(CPUCFLAGS) -ei -otabehiklmnr -zp4 -fpi87 -mf -bt=dos -s -wx -zq -dDOS $(QRSQRT) -i=. -zri -zdl
+ASMFLAGS    = $(ASMTARGET) -fp5 -mf -bt=dos
 LINKFLAGS   = system dos4g option map=quake486.map option eliminate option stack=256k
 ASM386      = 1     # link all 18 converted MASM renderer modules
 QTRACE      =       # tracing compiled out
 QRSQRT      = -dUSE_FAST_INVERSE_SQRT
 ```
 
-Release builds omit `-d2`. `-5`/`-6` are deliberately avoided (Pentium/PPro
-targets).
+Release builds omit `-d2`. `-5` is used only for `CPU=K5`; `-6` (Pentium Pro)
+is deliberately avoided.
 
-`CPU=486` is an opt-in build that takes `math`, `d_draw`, `d_draw16` and
-`d_polysa` from `asm\486\` into a separate `build_486` directory; plain builds
-are unchanged. It also reduces explosion particles from 1024 to 256.
+`CPU=486` takes `math`, `d_draw`, `d_draw16` and `d_polysa` from `asm\486\`,
+uses `-4r -fp3`, and reduces explosion particles from 1024 to 256.
+`CPU=K5` takes those four modules from `asm\K5\`, uses `-5r -fp5` and
+`wasm -5`, and keeps full visual effects — it is the base for dropping in
+K5-specific assembler later. Plain builds are unchanged: portable `asm\*`,
+486 codegen, full effects.
+
 `SKY=0` replaces the C two-layer sky mapper with a single-colour span fill, and
-`DLIGHT=0` removes the explosion dynamic light; both are opt-in performance
-options, off by default.
+`DLIGHT=0` removes the explosion dynamic light; both are CPU=486 opt-in
+performance options, off by default.
 
 These flags are the result of an A/B against the earlier `-4 -otexan -fp5` set:
 explicit 486 register calling convention (`-4r`), a speed-only optimiser set
@@ -153,8 +184,9 @@ set WATCOM=C:\WATCOM
 set PATH=C:\WATCOM\BINNT;C:\WATCOM\BINW;%PATH%
 cd WinQuake
 wmake -f Makefile all ASM386=1                       :: portable/full-effects build
-wmake -f Makefile all ASM386=1 CPU=486               :: 486 build, visuals intact
+wmake -f Makefile all ASM386=1 CPU=486               :: X5/486 build, visuals intact
 wmake -f Makefile all ASM386=1 CPU=486 SKY=0 DLIGHT=0 :: max-performance 486 build
+wmake -f Makefile all ASM386=1 CPU=K5                 :: K5 build, full effects
 ```
 
 `QRSQRT=` produces the original `sqrt()` A/B build; `QTRACE=1` produces a
