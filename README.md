@@ -38,9 +38,11 @@ the K5 confirmed why: cycles/call for original vs K5 code were
 5903 vs 6014 — two of three routines are slightly *slower* after the rewrite,
 and the third saves only 4 cycles in a routine that is not per-frame hot.
 The frame is limited by something other than the instruction scheduling we
-changed; `asm\K5\` is kept as an option, not as a measured win.
-Instruction-scheduling work for K5 is considered maxed out — any further gain
-there must come from structural changes, not more `fxch`/alignment/flag tuning.
+changed. The scheduling rewrites were archived; `asm\K5\` currently holds the
+original portable MASM translation, and `CPU=K5` differs from a default build
+only by its compiler flags. Instruction-scheduling work for K5 is considered
+maxed out — any further gain there must come from structural changes, not more
+`fxch`/alignment/flag tuning.
 
 An 86Box configuration is used for repeatable A/B runs on both machines.
 DOSBox is used first for visual validation; 86Box only after rendering is
