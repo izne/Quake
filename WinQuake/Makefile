@@ -109,7 +109,7 @@ AOBJS = $(BUILDDIR)\sys_dosa.obj
 # These are included in the link only when ASM386=1 (see ALL_OBJS below).
 ASM386_OBJS = $(BUILDDIR)\worlda.obj $(BUILDDIR)\r_varsa.obj $(BUILDDIR)\d_varsa.obj &
 	$(BUILDDIR)\snd_mixa.obj $(BUILDDIR)\math.obj $(BUILDDIR)\d_polysa.obj &
-	$(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_copy.obj &
+	$(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_draw32.obj $(BUILDDIR)\d_copy.obj &
 	$(BUILDDIR)\d_scana.obj $(BUILDDIR)\r_aclipa.obj $(BUILDDIR)\r_aliasa.obj &
 	$(BUILDDIR)\surf16.obj $(BUILDDIR)\d_parta.obj $(BUILDDIR)\surf8.obj &
 	$(BUILDDIR)\d_spr8.obj $(BUILDDIR)\r_drawa.obj $(BUILDDIR)\r_edgea.obj
@@ -203,6 +203,8 @@ $(BUILDDIR)\d_polysa.obj: $(ASMDIR)\d_polysa.asm
 $(BUILDDIR)\d_draw.obj:   $(ASMDIR)\d_draw.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_draw16.obj: $(ASMDIR)\d_draw16.asm
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_draw32.obj: asm\d_draw32.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_copy.obj:   asm\d_copy.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
