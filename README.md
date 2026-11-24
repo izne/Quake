@@ -9,6 +9,18 @@ optimized assembly modules and compiler settings.
 The goal: more FPS on period hardware, without changing how the game looks
 unless you explicitly ask for it.
 
+### Executable names
+
+| Name | Meaning |
+|---|---|
+| `QUAKE.EXE` | Stock Quake 1.06 (DJGPP/CWSDPMI reference) |
+| `QUAKE486.EXE` | Our 486 / Am5x86 build (all global + 486-specific optimizations) |
+| `QUAKEK5.EXE` | Our AMD K5 build (all global optimizations, full visual effects) |
+
+Older internal benchmark names (`QFIN486`, `QFINK5`, `ASMFINAL`, `Q486DRAW`,
+`Q486P256`, `Q486ALL`, etc.) are the same builds under their development
+names; the tables below keep them where they document that history.
+
 ---
 
 ## Test hardware
@@ -24,7 +36,7 @@ unless you explicitly ask for it.
   and real hardware do not produce comparable absolute numbers here.
 - Reference in 86Box: stock `QUAKE.EXE -nosound -nocdaudio +timedemo demo1` =
   **16.3 FPS**
-- Current final `QFIN486.EXE` (32px drawer, default in all current builds) =
+- Current final `QUAKE486.EXE` (32px drawer, default in all current builds) =
   **17.9 FPS** in the same 86Box configuration
 
 **K5:**
@@ -236,7 +248,7 @@ DOSBox and benchmarked on 86Box.)
 
 All numbers in this section were measured in 86Box, not on real hardware. The
 only comparison that matters here is like-for-like within 86Box: stock
-`QUAKE.EXE` = **16.3 FPS** versus the current final `QFIN486.EXE` = **17.9 FPS**.
+`QUAKE.EXE` = **16.3 FPS** versus the current final `QUAKE486.EXE` = **17.9 FPS**.
 The historical 14.4 FPS reading from the real machine is not a valid reference
 for these numbers and is not used as one.
 
@@ -248,13 +260,13 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 | `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | 16.8 |
 | `CPU=486` defaults (256 explosion particles, `Q486P256.EXE`) | 16.9 |
 | `CPU=486` + `SKY=0` + `DLIGHT=0` (`Q486ALL.EXE`) | 17.3 |
-| **Current final, 32px drawer** (`QFIN486.EXE`) | **17.9** |
+| **Current final, 32px drawer** (`QUAKE486.EXE`) | **17.9** |
 | Stock `QUAKE.EXE` | **16.3** |
 
 Each step was checked in DOSBox before benchmarking. The opt-out switches
 (`SKY=0`, `DLIGHT=0`) and the reduced particle count are performance options:
 they remove visible effects, so the full-effects numbers above are the fair
-comparison against stock. `QFIN486.EXE` is the current default build with the
+comparison against stock. `QUAKE486.EXE` is the current default build with the
 32px drawer; its 17.9 is +1.0 over the same EXE with the 16px drawer (16.9),
 a pure speedup with no visual change from the drawer itself. Real-hardware
 validation on the Am5x86 remains the decisive test; 86Box's timing model may
@@ -276,8 +288,8 @@ the 32px build is faster while keeping full effects. Final EXEs:
 
 | EXE | Target | FPS | SHA-256 |
 |---|---|---:|---|
-| `QFINK5.EXE` | AMD K5 | 24.5 | `9596A38B7E4EE56ECDE8496E9FF58976862E5179625636A3C2D19CFDC5EC9732` |
-| `QFIN486.EXE` | Am5x86 / 486 | 17.9 | `302D7D3BC189DAD2A4658D60881DC8EDC59F6D41410E9356B1BA370324D2BEBA` |
+| `QUAKEK5.EXE` | AMD K5 | 24.5 | `9596A38B7E4EE56ECDE8496E9FF58976862E5179625636A3C2D19CFDC5EC9732` |
+| `QUAKE486.EXE` | Am5x86 / 486 | 17.9 | `302D7D3BC189DAD2A4658D60881DC8EDC59F6D41410E9356B1BA370324D2BEBA` |
 
 Both were validated visually in DOSBox (16px and 32px frames identical-looking)
 and on real K5 ("looks like stock Quake, just faster"). They are new files —
