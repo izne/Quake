@@ -20,6 +20,7 @@ unless you explicitly ask for it.
 - Matrox Millenium 2 (PCI)
 - Reference: **stock Quake 1.06 = 14.4 FPS** on this machine
 - 86Box result, stock vs full-effects `CPU=486`: 16.3 vs 16.8 FPS
+- With the 32px span drawer (default in all current builds): **17.9 FPS**
 
 **K5:**
 
@@ -236,13 +237,17 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 | `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | 16.8 |
 | `CPU=486` defaults (256 explosion particles, `Q486P256.EXE`) | 16.9 |
 | `CPU=486` + `SKY=0` + `DLIGHT=0` (`Q486ALL.EXE`) | 17.3 |
+| **Current final, 32px drawer** (`QFIN486.EXE`) | **17.9** |
 | Stock `QUAKE.EXE` | **16.3** |
 
 Each step was checked in DOSBox before benchmarking. The opt-out switches
 (`SKY=0`, `DLIGHT=0`) and the reduced particle count are performance options:
 they remove visible effects, so the full-effects numbers above are the fair
-comparison against stock. Real-hardware validation on the Am5x86 remains the
-decisive test; 86Box's timing model may not reflect all 486 instruction costs.
+comparison against stock. `QFIN486.EXE` is the current default build with the
+32px drawer; its 17.9 is +1.0 over the same EXE with the 16px drawer (16.9),
+a pure speedup with no visual change from the drawer itself. Real-hardware
+validation on the Am5x86 remains the decisive test; 86Box's timing model may
+not reflect all 486 instruction costs.
 
 ### Span subdivision A/B (full visual fidelity, no opt-outs)
 
