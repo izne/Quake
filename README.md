@@ -18,9 +18,14 @@ unless you explicitly ask for it.
 - AMD Am5x86-X5 @ 160 MHz (4x40 MHz FSB)
 - 16 MB EDO 70 ns, 256 KB L2
 - Matrox Millenium 2 (PCI)
-- Reference: **stock Quake 1.06 = 14.4 FPS** on this machine
-- 86Box result, stock vs full-effects `CPU=486`: 16.3 vs 16.8 FPS
-- With the 32px span drawer (default in all current builds): **17.9 FPS**
+- **All 486/X5 benchmark figures in this document are from 86Box** with the
+  configuration below. The one 14.4 FPS measurement ever taken on the real
+  machine is historical only and is **not used as a reference** — emulation
+  and real hardware do not produce comparable absolute numbers here.
+- Reference in 86Box: stock `QUAKE.EXE -nosound -nocdaudio +timedemo demo1` =
+  **16.3 FPS**
+- Current final `QFIN486.EXE` (32px drawer, default in all current builds) =
+  **17.9 FPS** in the same 86Box configuration
 
 **K5:**
 
@@ -227,7 +232,13 @@ codegen (`-fp3`) instead of Pentium scheduling (`-fp5`), inlined FP rounding
 (mid-project numbers; the final all-ASM build was validated visually in
 DOSBox and benchmarked on 86Box.)
 
-### 86Box (same config as the 14.4 FPS real-hardware reference)
+### 86Box X5 (all 486 / Am5x86 figures in this document)
+
+All numbers in this section were measured in 86Box, not on real hardware. The
+only comparison that matters here is like-for-like within 86Box: stock
+`QUAKE.EXE` = **16.3 FPS** versus the current final `QFIN486.EXE` = **17.9 FPS**.
+The historical 14.4 FPS reading from the real machine is not a valid reference
+for these numbers and is not used as one.
 
 Command: `-nosound -nocdaudio +timedemo demo1`
 
