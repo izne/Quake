@@ -36,8 +36,8 @@ names; the tables below keep them where they document that history.
   and real hardware do not produce comparable absolute numbers here.
 - Reference in 86Box: stock `QUAKE.EXE -nosound -nocdaudio +timedemo demo1` =
   **16.3 FPS**
-- Current final `Q64PX486.EXE` (64px drawer, default) awaits validation in
-  the same 86Box configuration; the 32px predecessor scored **17.9 FPS**
+- Current final `Q64PX486.EXE` (64px drawer, default) = **18.3 FPS** in the
+  same 86Box configuration; the 32px predecessor scored 17.9 FPS
 
 **K5:**
 
@@ -274,7 +274,7 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 | `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | 16.8 |
 | `CPU=486` defaults (256 explosion particles, `Q486P256.EXE`) | 16.9 |
 | `CPU=486` + `SKY=0` + `DLIGHT=0` (`Q486ALL.EXE`) | 17.3 |
-| Current final, 64px drawer (`Q64PX486.EXE`) | pending |
+| Current final, 64px drawer (`Q64PX486.EXE`) | **18.3** |
 | 32px predecessor (`QUAKE486.EXE`) | 17.9 |
 | Stock `QUAKE.EXE` | **16.3** |
 
@@ -296,9 +296,10 @@ layout. Both CPUs scale monotonically with segment width.
 | CPU | 8px | 16px | 32px | **64px (default)** |
 |---|---:|---:|---:|---:|
 | AMD K5 (real hardware) | 21.2 | 23.3-23.4 | 24.5-24.6 | **25.2** |
-| AMD Am5x86-X5 160 (86Box) | 15.3 | 16.9 | 17.9 | pending validation |
+| AMD Am5x86-X5 160 (86Box) | 15.3 | 16.9 | 17.9 | **18.3** |
 
-K5: 16->32 gave +1.1, 32->64 gave +0.6 (roughly halving). 128px was tried and
+K5: 16->32 gave +1.1, 32->64 gave +0.6 (roughly halving). Am5x86: 32->64 gave
++0.4. 128px was tried and
 rejected - texture corruption and a 19 KB object that exceeds K5's L1 I-cache,
 so 64px is the ceiling. For reference, TurboQuake's `586QUAKE.EXE` scores 24.0
 FPS on the K5 rig; the 64px build is 1.2 faster while keeping full effects.
@@ -308,13 +309,13 @@ Final EXEs (64px drawer on by default):
 | EXE | Target | FPS | SHA-256 |
 |---|---|---|---:|
 | `Q64PXK5.EXE` | AMD K5 | 25.2 | `02FDA3BAF463984AC3AB907A9A8B358F14AD68774D82A9BA220044F2D95FB766` |
-| `Q64PX486.EXE` | Am5x86 / 486 | pending | `3E7BDE8927BEB90DA29C9898E24001BA77A320641AD35594EB63E5772B9D3A3B` |
+| `Q64PX486.EXE` | Am5x86 / 486 | 18.3 | `3E7BDE8927BEB90DA29C9898E24001BA77A320641AD35594EB63E5772B9D3A3B` |
 
 Both were validated visually in DOSBox (all drawers render identical-looking
 frames) and the K5 final was validated on real hardware ("looks like stock
 Quake, just faster"). They are new files - no previously deployed final EXE
-was overwritten. The 486 final awaits the X5-160 A/B before its number is
-filled in (`RUNV486_64.BAT` vs `RUNV486_32.BAT`).
+was overwritten. Both finals were validated: K5 on real hardware, 486 on
+86Box X5-160.
 
 ---
 
