@@ -129,6 +129,12 @@ TARGET = quake486.exe
 # CPU switch: CPU=486 selects the 486-optimized ASM modules from asm\486\.
 # Unset/BASE keeps the original portable asm\*.asm modules. CPU-specific
 # builds use their own BUILDDIR and TARGET so objects never get mixed.
+#
+# A CPU folder is an OVERRIDE directory, not a full copy of asm\. For each
+# overridable module below, use the CPU-specific file if it exists, otherwise
+# fall back to the portable asm\ original. This means a platform folder only
+# needs to contain the files that genuinely differ for that CPU; adding or
+# removing an override requires no Makefile changes.
 !ifeq CPU 486
 ASMDIR    = asm\486
 BUILDDIR  = build_486
@@ -145,6 +151,33 @@ ASMTARGET = -5
 !else
 ASMDIR    = asm
 !endif
+!endif
+
+# Per-module source selection: CPU override if present, else portable asm\.
+!if exist($(ASMDIR)\math.asm)
+MATH_SRC      = $(ASMDIR)\math.asm
+!else
+MATH_SRC      = asm\math.asm
+!endif
+!if exist($(ASMDIR)\d_polysa.asm)
+DPOLYSA_SRC   = $(ASMDIR)\d_polysa.asm
+!else
+DPOLYSA_SRC   = asm\d_polysa.asm
+!endif
+!if exist($(ASMDIR)\d_draw.asm)
+DDRAW_SRC     = $(ASMDIR)\d_draw.asm
+!else
+DDRAW_SRC     = asm\d_draw.asm
+!endif
+!if exist($(ASMDIR)\d_draw16.asm)
+DDRAW16_SRC   = $(ASMDIR)\d_draw16.asm
+!else
+DDRAW16_SRC   = asm\d_draw16.asm
+!endif
+!if exist($(ASMDIR)\d_draw32.asm)
+DDRAW32_SRC   = $(ASMDIR)\d_draw32.asm
+!else
+DDRAW32_SRC   = asm\d_draw32.asm
 !endif
 
 # CPU=486 performance defaults: textured sky stays the default (SKY=0 opts
@@ -196,15 +229,15 @@ $(BUILDDIR)\d_varsa.obj:  asm\d_varsa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\snd_mixa.obj: asm\snd_mixa.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\math.obj:     $(ASMDIR)\math.asm
+$(BUILDDIR)\math.obj:     $(MATH_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_polysa.obj: $(ASMDIR)\d_polysa.asm
+$(BUILDDIR)\d_polysa.obj: $(DPOLYSA_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_draw.obj:   $(ASMDIR)\d_draw.asm
+$(BUILDDIR)\d_draw.obj:   $(DDRAW_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_draw16.obj: $(ASMDIR)\d_draw16.asm
+$(BUILDDIR)\d_draw16.obj: $(DDRAW16_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
-$(BUILDDIR)\d_draw32.obj: asm\d_draw32.asm
+$(BUILDDIR)\d_draw32.obj: $(DDRAW32_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_copy.obj:   asm\d_copy.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<

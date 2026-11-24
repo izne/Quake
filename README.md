@@ -103,13 +103,20 @@ It is on by default. **Caveat:** DOSBox recompiles x87 onto the host FPU, so
 microbenchmark `tests/sq7test.c` even measures it 1.29x slower in emulation).
 Real-hardware numbers are the ones that matter.
 
-### 2. Watcom C / DOS4GW instead of DJGPP
+### 2. Watcom C and a leaner DOS extender instead of DJGPP
 
 DJGPP-specific AT&T inline assembly and CWSDPMI code were replaced so the project
-builds with OpenWatcom 1.9 + DOS4GW, which generates tighter 486 code, uses
-register calling conventions by default and aggressively inlines. Watcom's
-default 1-byte enums had to be overridden with `-ei`; otherwise structs such as
+builds with OpenWatcom 1.9, which generates tighter 486 code, uses register
+calling conventions by default and aggressively inlines. Watcom's default
+1-byte enums had to be overridden with `-ei`; otherwise structs such as
 `daliasframetype_t` shrank and the alias/skin model readers desynchronised.
+
+The executable was also moved from the bundled DOS4GW stub to the lighter
+**DOS32A** extender, which gave a further FPS increase. All K5 benchmark
+figures in this document were taken with DOS32A held constant, so the 486/K5
+comparisons reflect code changes only. Always use the same extender when
+comparing FPS — switching DOS4GW/DOS32A mid-series has produced a false
+"optimization" in the past.
 
 ### 3. All 18 renderer modules converted from GAS to MASM
 
@@ -134,7 +141,7 @@ FPU setup (`fdiv`/gradient work) dominates span drawing, so halving the number
 of segments is a net win despite the longer unrolled pixel loop. Rendering is
 visually identical to the 16px path.
 
-The tables in the engineer-supplied file were corrected before use:
+Two table defects in the original 32px draft were corrected before use:
 `reciprocal_table_32` was rescaled to signed 1.31 (`2^31/n`, matching
 `reciprocal_table_16`), and `entryvec_table_32` had a spurious `LNoSteps`
 entry at index 1 that shifted every handler by one pixel.
