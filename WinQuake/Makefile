@@ -109,7 +109,7 @@ AOBJS = $(BUILDDIR)\sys_dosa.obj
 # These are included in the link only when ASM386=1 (see ALL_OBJS below).
 ASM386_OBJS = $(BUILDDIR)\worlda.obj $(BUILDDIR)\r_varsa.obj $(BUILDDIR)\d_varsa.obj &
 	$(BUILDDIR)\snd_mixa.obj $(BUILDDIR)\math.obj $(BUILDDIR)\d_polysa.obj &
-	$(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_draw32.obj $(BUILDDIR)\d_copy.obj &
+	$(BUILDDIR)\d_draw.obj $(BUILDDIR)\d_draw16.obj $(BUILDDIR)\d_draw32.obj $(BUILDDIR)\d_draw64.obj $(BUILDDIR)\d_copy.obj &
 	$(BUILDDIR)\d_scana.obj $(BUILDDIR)\r_aclipa.obj $(BUILDDIR)\r_aliasa.obj &
 	$(BUILDDIR)\surf16.obj $(BUILDDIR)\d_parta.obj $(BUILDDIR)\surf8.obj &
 	$(BUILDDIR)\d_spr8.obj $(BUILDDIR)\r_drawa.obj $(BUILDDIR)\r_edgea.obj
@@ -179,6 +179,11 @@ DDRAW32_SRC   = $(ASMDIR)\d_draw32.asm
 !else
 DDRAW32_SRC   = asm\d_draw32.asm
 !endif
+!if exist($(ASMDIR)\d_draw64.asm)
+DDRAW64_SRC   = $(ASMDIR)\d_draw64.asm
+!else
+DDRAW64_SRC   = asm\d_draw64.asm
+!endif
 
 # CPU=486 performance defaults: textured sky stays the default (SKY=0 opts
 # into a flat fill); explosion particles are reduced from 1024 to 256.
@@ -238,6 +243,8 @@ $(BUILDDIR)\d_draw.obj:   $(DDRAW_SRC)
 $(BUILDDIR)\d_draw16.obj: $(DDRAW16_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_draw32.obj: $(DDRAW32_SRC)
+	$(ASM) $(ASMFLAGS) -fo=$@ $<
+$(BUILDDIR)\d_draw64.obj: $(DDRAW64_SRC)
 	$(ASM) $(ASMFLAGS) -fo=$@ $<
 $(BUILDDIR)\d_copy.obj:   asm\d_copy.asm
 	$(ASM) $(ASMFLAGS) -fo=$@ $<

@@ -36,8 +36,8 @@ names; the tables below keep them where they document that history.
   and real hardware do not produce comparable absolute numbers here.
 - Reference in 86Box: stock `QUAKE.EXE -nosound -nocdaudio +timedemo demo1` =
   **16.3 FPS**
-- Current final `QUAKE486.EXE` (32px drawer, default in all current builds) =
-  **17.9 FPS** in the same 86Box configuration
+- Current final `Q64PX486.EXE` (64px drawer, default) awaits validation in
+  the same 86Box configuration; the 32px predecessor scored **17.9 FPS**
 
 **K5:**
 
@@ -64,7 +64,7 @@ maxed out — any further gain there must come from structural changes, not more
 `fxch`/alignment/flag tuning. That structural change is the 32px span drawer
 (section 4) — found by RDTSC phase profiling, which showed `D_DrawSpans16`
 consuming ~31% of the frame and the per-segment FPU setup, not the pixel loop,
-as the cost. A/B on real K5: 8px 21.2, 16px 23.3, 32px **24.5** FPS.
+as the cost. A/B on real K5: 8px 21.2, 16px 23.3, 32px 24.5, 64px **25.2** FPS.
 
 A later 24.7 FPS reading from `CPU=486` builds on the K5 rig was traced to the
 486-only `-DREDUCED_EXPLOSION_PARTICLES` (1024→256 explosion particles), not to
@@ -133,31 +133,37 @@ r_edgea
 With `ASM386=1` all of them are linked and `id386=1` compiles out the C
 renderer fallbacks. The final build has **zero C renderer helpers**.
 
-### 4. 32-pixel span subdivision (`d_draw32.asm`)
+### 4. Span subdivision: 32px and 64px (`d_draw32.asm`, `d_draw64.asm`)
 
-A 19th renderer module, `d_draw32.asm`, draws textured spans in 32-pixel
-segments instead of 16. RDTSC profiling on the real K5 showed the per-segment
-FPU setup (`fdiv`/gradient work) dominates span drawing, so halving the number
-of segments is a net win despite the longer unrolled pixel loop. Rendering is
-visually identical to the 16px path.
+RDTSC profiling on the real K5 showed the per-segment FPU setup (`fdiv` and
+gradient work) dominates textured-span drawing — about 31% of the frame. The
+fix is structural: draw each span in larger affine segments so the expensive
+perspective setup runs fewer times. Two additional renderer modules were added:
 
-Two table defects in the original 32px draft were corrected before use:
-`reciprocal_table_32` was rescaled to signed 1.31 (`2^31/n`, matching
-`reciprocal_table_16`), and `entryvec_table_32` had a spurious `LNoSteps`
-entry at index 1 that shifted every handler by one pixel.
+- **`d_draw32.asm`** — 32-pixel segments (19th module). Two table defects in
+  the original draft were corrected: `reciprocal_table_32` was rescaled to
+  signed 1.31 (`2^31/n`, matching `reciprocal_table_16`), and
+  `entryvec_table_32` had a spurious `LNoSteps` entry at index 1 that shifted
+  every handler by one pixel.
+- **`d_draw64.asm`** — 64-pixel segments (20th module), generated from the
+  corrected 32px template (`sar 22`/`shl 10`, 63-entry reciprocal table, FDIV
+  overlap launched at pixel 32). The 64px drawer is **on by default**.
 
-Selected by the `d_subdiv32` cvar, **on by default**:
+Selected at runtime; **64px is the default**:
 
-```make
-// d_init.c
-cvar_t  d_subdiv32 = {"d_subdiv32", "1"};   // 1 = 32px, 0 + d_subdiv16 1 = 16px, 0 + d_subdiv16 0 = 8px
+```
++ d_subdiv64 1                        :: 64px (default)
++ d_subdiv64 0 + d_subdiv32 1         :: 32px
++ d_subdiv64 0 + d_subdiv32 0 + d_subdiv16 1  :: 16px
++ d_subdiv64 0 + d_subdiv32 0 + d_subdiv16 0  :: 8px
 ```
 
-`d_draw32.obj` is linked for every ASM386 build from the single global source
-`asm\d_draw32.asm`. It is not duplicated into the platform folders — those hold
-only the modules with genuine per-CPU rewrites (`math`, `d_polysa`, `d_draw`,
-`d_draw16`). No rendering flags or effects change — this is a pure speedup with
-full visual fidelity.
+Both modules are linked for every ASM386 build from single global sources in
+`asm\`. They are not duplicated into platform folders — those hold only modules
+with genuine per-CPU rewrites. Rendering is visually identical to the original
+16px path; no effects change. **128px was tried and rejected**: with only 9
+fractional step bits it produces visible texture corruption, and its 19 KB
+object exceeds K5's 16 KB L1 instruction cache. 64px is the practical ceiling.
 
 ---
 
@@ -171,7 +177,8 @@ the CPU folders hold only the modules with genuine per-CPU rewrites.
 | Global | Fast inverse square root (`q_rsqrt`) | `mathlib.c`, `sv_phys.c`, `sv_user.c`, `view.c`, `pr_cmds.c` | On by default (`QRSQRT`); real-hardware gain, DOSBox invisible |
 | Global | OpenWatcom 1.9 + DOS4GW (was DJGPP/CWSDPMI) | whole C build | Register calling convention, aggressive inlining, tighter 486 code; `-ei` fixes 1-byte enum struct layout |
 | Global | All renderer assembly translated GAS -> MASM | `asm\*.asm` (18 modules) | Original `.s` files pristine; `id386=1` compiles out C fallbacks; zero C renderer helpers |
-| Global | **32-pixel span subdivision** | `asm\d_draw32.asm` (`d_subdiv32=1`) | New 19th module; halves per-segment FPU setup. +1.1 FPS K5, +1.0 Am5x86. Full visual fidelity |
+| Global | **32-pixel span subdivision** | `asm\d_draw32.asm` | 19th module; halves per-segment FPU setup. +1.1 FPS K5, +1.0 Am5x86. Full visual fidelity |
+| Global | **64-pixel span subdivision** | `asm\d_draw64.asm` (`d_subdiv64=1`) | 20th module, default; halves setup again. +0.6 FPS K5. Full visual fidelity |
 | 486 / Am5x86 | Zero-`fxch` math | `asm\486\math.asm` | `BoxOnPlaneSide` computes dist1/dist2 in parallel x87 slots; `in[0..2]` kept resident across all 3 dot products; direct memory-operand FMULs |
 | 486 / Am5x86 | Zero-`fxch` polygon signed-area test | `asm\486\d_polysa.asm` | `area = term2 - term1`, original sign convention preserved |
 | 486 / Am5x86 | FPU setup rewrite in span drawers | `asm\486\d_draw.asm`, `asm\486\d_draw16.asm` | Sequential s/z, t/z, 1/z setup (1 `fxch` vs 13); reversed `[t]`/`[s]` `fistp` order (0 vs 8). `d_draw.asm` also 0 `fxch` in z-span setup (down from 4) |
@@ -267,40 +274,47 @@ Command: `-nosound -nocdaudio +timedemo demo1`
 | `CPU=486` build with 486-optimised drawers (`Q486DRAW.EXE`) | 16.8 |
 | `CPU=486` defaults (256 explosion particles, `Q486P256.EXE`) | 16.9 |
 | `CPU=486` + `SKY=0` + `DLIGHT=0` (`Q486ALL.EXE`) | 17.3 |
-| **Current final, 32px drawer** (`QUAKE486.EXE`) | **17.9** |
+| Current final, 64px drawer (`Q64PX486.EXE`) | pending |
+| 32px predecessor (`QUAKE486.EXE`) | 17.9 |
 | Stock `QUAKE.EXE` | **16.3** |
 
 Each step was checked in DOSBox before benchmarking. The opt-out switches
 (`SKY=0`, `DLIGHT=0`) and the reduced particle count are performance options:
 they remove visible effects, so the full-effects numbers above are the fair
-comparison against stock. `QUAKE486.EXE` is the current default build with the
-32px drawer; its 17.9 is +1.0 over the same EXE with the 16px drawer (16.9),
+comparison against stock. The 32px predecessor `QUAKE486.EXE` scored 17.9,
++1.0 over the same EXE with the 16px drawer (16.9),
 a pure speedup with no visual change from the drawer itself. Real-hardware
 validation on the Am5x86 remains the decisive test; 86Box's timing model may
 not reflect all 486 instruction costs.
 
 ### Span subdivision A/B (full visual fidelity, no opt-outs)
 
-Same EXE per CPU, only the `d_subdiv32` / `d_subdiv16` cvars changed. Both CPUs
-scale monotonically 8 < 16 < 32; the 16px control matches the earlier independent
-baseline exactly, so the gain is from the drawer and not link layout.
+Same EXE per CPU; only the subdivision cvars changed. Each step was measured
+against a same-build control, so the gains come from the drawer and not link
+layout. Both CPUs scale monotonically with segment width.
 
-| CPU | 8px | 16px | **32px (default)** | Gain |
+| CPU | 8px | 16px | 32px | **64px (default)** |
 |---|---:|---:|---:|---:|
-| AMD K5 (real hardware) | 21.2 | 23.3–23.4 | **24.5** | +1.1 (+4.7%) |
-| AMD Am5x86-X5 160 (86Box) | 15.3 | 16.9 | **17.9** | +1.0 (+6%) |
+| AMD K5 (real hardware) | 21.2 | 23.3-23.4 | 24.5-24.6 | **25.2** |
+| AMD Am5x86-X5 160 (86Box) | 15.3 | 16.9 | 17.9 | pending validation |
 
-For reference, TurboQuake's `586QUAKE.EXE` scores 24.0 FPS on the same K5 rig;
-the 32px build is faster while keeping full effects. Final EXEs:
+K5: 16->32 gave +1.1, 32->64 gave +0.6 (roughly halving). 128px was tried and
+rejected - texture corruption and a 19 KB object that exceeds K5's L1 I-cache,
+so 64px is the ceiling. For reference, TurboQuake's `586QUAKE.EXE` scores 24.0
+FPS on the K5 rig; the 64px build is 1.2 faster while keeping full effects.
+
+Final EXEs (64px drawer on by default):
 
 | EXE | Target | FPS | SHA-256 |
-|---|---|---:|---|
-| `QUAKEK5.EXE` | AMD K5 | 24.5 | `9596A38B7E4EE56ECDE8496E9FF58976862E5179625636A3C2D19CFDC5EC9732` |
-| `QUAKE486.EXE` | Am5x86 / 486 | 17.9 | `302D7D3BC189DAD2A4658D60881DC8EDC59F6D41410E9356B1BA370324D2BEBA` |
+|---|---|---|---:|
+| `Q64PXK5.EXE` | AMD K5 | 25.2 | `02FDA3BAF463984AC3AB907A9A8B358F14AD68774D82A9BA220044F2D95FB766` |
+| `Q64PX486.EXE` | Am5x86 / 486 | pending | `3E7BDE8927BEB90DA29C9898E24001BA77A320641AD35594EB63E5772B9D3A3B` |
 
-Both were validated visually in DOSBox (16px and 32px frames identical-looking)
-and on real K5 ("looks like stock Quake, just faster"). They are new files —
-no previously deployed final EXE was overwritten.
+Both were validated visually in DOSBox (all drawers render identical-looking
+frames) and the K5 final was validated on real hardware ("looks like stock
+Quake, just faster"). They are new files - no previously deployed final EXE
+was overwritten. The 486 final awaits the X5-160 A/B before its number is
+filled in (`RUNV486_64.BAT` vs `RUNV486_32.BAT`).
 
 ---
 
@@ -319,13 +333,14 @@ wmake -f Makefile all ASM386=1 CPU=K5                 :: K5 build, full effects
 `QRSQRT=` produces the original `sqrt()` A/B build; `QTRACE=1` produces a
 diagnostic trace build (never used for final/performance builds). `CPU=486`
 also reduces explosion particles from 1024 to 256; `SKY=0` and `DLIGHT=0` are
-opt-in visual trade-offs, off by default. None of these affect the 32px drawer,
-which is on by default through `d_subdiv32` and keeps full visual fidelity.
+opt-in visual trade-offs, off by default. None of these affect the span drawers,
+which keep full visual fidelity.
 
 To A/B the span drawer at runtime without rebuilding:
 
 ```
-+ d_subdiv32 1                        :: 32px (default)
-+ d_subdiv32 0 + d_subdiv16 1         :: 16px
-+ d_subdiv32 0 + d_subdiv16 0         :: 8px
++ d_subdiv64 1                        :: 64px (default)
++ d_subdiv64 0 + d_subdiv32 1         :: 32px
++ d_subdiv64 0 + d_subdiv32 0 + d_subdiv16 1 :: 16px
++ d_subdiv64 0 + d_subdiv32 0 + d_subdiv16 0 :: 8px
 ```

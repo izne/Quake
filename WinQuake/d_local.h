@@ -56,6 +56,7 @@ typedef struct sspan_s
 
 extern cvar_t	d_subdiv16;
 extern cvar_t	d_subdiv32;
+extern cvar_t	d_subdiv64;
 
 extern float	scale_for_mip;
 
@@ -81,6 +82,7 @@ fixed16_t	bbextents, bbextentt;
 void D_DrawSpans8 (espan_t *pspans);
 void D_DrawSpans16 (espan_t *pspans);
 void D_DrawSpans32 (espan_t *pspans);
+void D_DrawSpans64 (espan_t *pspans);
 void D_DrawZSpans (espan_t *pspans);
 void Turbulent8 (espan_t *pspan);
 void D_SpriteDrawSpans (sspan_t *pspan);

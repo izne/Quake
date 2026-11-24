@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 cvar_t	d_subdiv16 = {"d_subdiv16", "1"};
 cvar_t	d_subdiv32 = {"d_subdiv32", "1"};
+cvar_t	d_subdiv64 = {"d_subdiv64", "1"};
 cvar_t	d_mipcap = {"d_mipcap", "0"};
 cvar_t	d_mipscale = {"d_mipscale", "1"};
 
@@ -53,6 +54,7 @@ void D_Init (void)
 
 	Cvar_RegisterVariable (&d_subdiv16);
 	Cvar_RegisterVariable (&d_subdiv32);
+	Cvar_RegisterVariable (&d_subdiv64);
 	Cvar_RegisterVariable (&d_mipcap);
 	Cvar_RegisterVariable (&d_mipscale);
 
@@ -148,7 +150,9 @@ void D_SetupFrame (void)
 		d_scalemip[i] = basemip[i] * d_mipscale.value;
 
 #if	id386
-				if (d_subdiv32.value)
+				if (d_subdiv64.value)
+					d_drawspans = D_DrawSpans64;
+				else if (d_subdiv32.value)
 					d_drawspans = D_DrawSpans32;
 				else if (d_subdiv16.value)
 					d_drawspans = D_DrawSpans16;
